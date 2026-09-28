@@ -1,6 +1,6 @@
 [project]
 name = "switchagent"
-version = "1.0.22"
+version = "1.0.23"
 description = "Local Switch MTP file manager for DBI (scan/classify/extract/preview -> real or mock MTP transfer, queue+recovery, Web UI)"
 requires-python = ">=3.11"
 
