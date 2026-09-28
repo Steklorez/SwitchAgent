@@ -99,6 +99,8 @@ def test_cover_name_fallback_does_not_guess_between_different_games(tmp_path, mo
                 "1": {"id": "0100000000011000", "name": "Completely Different Game",
                       "iconUrl": "https://img-eshop.cdn.nintendo.net/icon.jpg"},
             }).encode()
+        if url.startswith(covers.STEAM_SEARCH):
+            return json.dumps({"total": 0, "items": []}).encode()
         return b"\xff\xd8\xfftest"
     monkeypatch.setattr(covers, "download", download)
     queue = covers.CoverQueue()
@@ -191,3 +193,72 @@ def test_cover_status_route_and_hidden_image_loading(web_ctx, tmp_path, monkeypa
     assert 'id="cover-status-text"' in html
     assert 'data-cover-id="0100A6300150C000"' in html
     assert 'loading="lazy"' not in html
+
+
+def _nro_with_icon(path, icon):
+    """A minimal NRO: header ("NRO0", size) then an ASET whose icon entry
+    points just past the asset header."""
+    import struct
+    header = bytearray(0x80)
+    header[0x10:0x14] = b"NRO0"
+    struct.pack_into("<I", header, 0x18, len(header))
+    aset = bytearray(0x38)
+    aset[:4] = b"ASET"
+    struct.pack_into("<QQ", aset, 0x08, len(aset), len(icon))
+    path.write_bytes(bytes(header) + bytes(aset) + icon)
+
+
+def _run_queue(queue):
+    for _ in range(200):
+        if not queue.running:
+            return
+        time.sleep(.01)
+
+
+def test_a_port_without_a_titledb_entry_gets_the_icon_inside_its_nro(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path / "data")
+    icon = b"\xff\xd8\xff" + b"icon" * 10
+    game = tmp_path / "Pod Racer" / "switch" / "podracer"
+    game.mkdir(parents=True)
+    _nro_with_icon(game / "podracer.nro", icon)
+    asked = []
+
+    def download(url, limit):
+        asked.append(url)
+        return json.dumps({}).encode()
+    monkeypatch.setattr(covers, "download", download)
+    queue = covers.CoverQueue()
+    queue.submit([("sd-292", "Pod Racer 0.2.0", [str(tmp_path / "Pod Racer")])])
+    _run_queue(queue)
+    assert covers.image_path("SD-292").read_bytes() == icon
+    assert asked == [covers.TITLEDB]  # the icon needed no search anywhere
+
+
+def test_steam_is_asked_by_the_name_without_release_notes_and_only_an_exact_name_counts(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path / "data")
+    art = b"\xff\xd8\xffsteam"
+
+    def download(url, limit):
+        if url == covers.TITLEDB:
+            return json.dumps({}).encode()
+        if url.startswith(covers.STEAM_SEARCH):
+            assert url[len(covers.STEAM_SEARCH):] in ("Zuma%20Deluxe", "Mega%20Man%20X%20Regenesis")
+            return json.dumps({"items": [
+                {"type": "app", "id": 3330, "name": "Zuma Deluxe"},
+                {"type": "app", "id": 906634, "name": "Mega Man X4 Sound Collection"},
+            ]}).encode()
+        assert url == covers.STEAM_ART[0].format(3330)
+        return art
+    monkeypatch.setattr(covers, "download", download)
+    queue = covers.CoverQueue()
+    queue.submit([("01333DE6FB400000", "Zuma Deluxe (port)"), ("01693DFA9BB80000", "Mega Man X Regenesis")])
+    _run_queue(queue)
+    assert covers.image_path("01333DE6FB400000").read_bytes() == art
+    assert not covers.image_path("01693DFA9BB80000").exists()
+
+
+def test_cover_ids_are_title_ids_or_library_rows_and_nothing_else():
+    assert covers.valid_cover_id("01333de6fb400000")
+    assert covers.valid_cover_id("sd-12") and covers.valid_cover_id("OTHER-7")
+    for bad in ("", "sd-", "..\\index", "sd-1/../x", "0133"):
+        assert not covers.valid_cover_id(bad)

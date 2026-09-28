@@ -7,6 +7,11 @@ Entries are one sentence per change, three to five lines per release, and
 only what a user would notice — no internals, no reasoning, no history.
 Those belong in the commit message. See [CLAUDE.md](CLAUDE.md#how-to-write-an-entry).
 
+## v1.0.24
+
+- Homebrew ports get a cover too: the icon inside the port itself, or the game's Steam art when the name matches.
+- Games with no TITLE_ID show their cover on the card.
+
 ## v1.0.23
 
 - A homebrew port whose package does not say which game it is (Need for Speed: Most Wanted) shows as one game with its SD files and installs like any other.

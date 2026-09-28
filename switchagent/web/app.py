@@ -787,7 +787,12 @@ def create_app(ctx: WebContext) -> FastAPI:
         # falls back to a TitleDB name search when the TITLE_ID itself isn't
         # found there (a release filename's bracketed TITLE_ID is never more
         # than a low-confidence guess, see title_id.py's from_filename).
-        ctx.covers.submit([(g["base_title_id"], g["name"]) for g in view["games"]], retry=retry)
+        # And where its files are: a homebrew port's cover is the icon
+        # inside its own .nro.
+        ctx.covers.submit([
+            (g["base_title_id"], g["name"], [e["absolute_path"] for e in services._family_entries(g)])
+            for g in view["games"]
+        ], retry=retry)
         return {"queued": True}
 
     @app.get("/api/covers/status")
@@ -807,7 +812,7 @@ def create_app(ctx: WebContext) -> FastAPI:
         with path.open("rb") as file:
             header = file.read(12)
         media = "image/png" if header.startswith(b"\x89PNG") else "image/webp" if header.startswith(b"RIFF") else "image/jpeg"
-        return FileResponse(path, media_type=media, headers={"Cache-Control": "public, max-age=86400"})
+        return FileResponse(path, media_type=media, headers={"Cache-Control": "public, max-age=604800"})
 
     @app.post("/api/settings/library-dir/validate")
     def api_validate_library_dir(body: LibraryDirRequest):

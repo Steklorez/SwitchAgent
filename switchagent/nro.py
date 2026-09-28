@@ -27,7 +27,10 @@ class NroInfo:
 # -- relative to the asset header itself.
 _NRO_MAGIC_OFFSET = 0x10
 _NRO_SIZE_OFFSET = 0x18
+_ASET_ICON_OFFSET = 0x08
 _ASET_NACP_OFFSET = 0x18
+# The icon the Homebrew Menu shows: a JPEG, 256x256 by convention.
+_ICON_LIMIT = 2 * 1024 * 1024
 # NACP: 16 language entries of 0x300 bytes (name 0x200, author 0x100);
 # DisplayVersion is 0x10 bytes at 0x3060.
 _NACP_LANG_ENTRY = 0x300
@@ -54,6 +57,30 @@ def read_nro_info(path: Path) -> Optional[NroInfo]:
             return _read_info(f.read, f.seek)
     except OSError:
         return None
+
+
+def read_nro_icon(path: Path) -> Optional[bytes]:
+    """The JPEG icon embedded in the NRO's asset section -- the picture the
+    Homebrew Menu shows for it. None when there is none, or the file is not
+    an NRO; never raises for a malformed file."""
+    try:
+        with path.open("rb") as f:
+            header = f.read(0x80)
+            if len(header) < 0x20 or header[_NRO_MAGIC_OFFSET:_NRO_MAGIC_OFFSET + 4] != b"NRO0":
+                return None
+            (nro_size,) = struct.unpack_from("<I", header, _NRO_SIZE_OFFSET)
+            f.seek(nro_size)
+            aset = f.read(0x38)
+            if len(aset) < 0x38 or aset[:4] != b"ASET":
+                return None
+            icon_offset, icon_size = struct.unpack_from("<QQ", aset, _ASET_ICON_OFFSET)
+            if not 0 < icon_size <= _ICON_LIMIT:
+                return None
+            f.seek(nro_size + icon_offset)
+            icon = f.read(icon_size)
+    except OSError:
+        return None
+    return icon if len(icon) == icon_size and icon.startswith(b"\xff\xd8\xff") else None
 
 
 def nro_info_from_bytes(data: bytes) -> Optional[NroInfo]:
