@@ -145,6 +145,14 @@ the real Zuma / Mega Man layouts, so change a test on purpose or not at all:
   not needed by it (`title_id_source` "release"): ticked by hand, never
   along with the game. Two games side by side: it stays its own card
   (named after the folder), never guessed onto either.
+- **A forwarder that gives nothing away is still its port.** Some ports'
+  `.nsp` has no `[TITLE_ID]` in its name and every NCA encrypted (Need for
+  Speed: Most Wanted), so neither its TITLE_ID nor its launch path can be
+  read. One forwarder-sized package like that, beside a `switch/` folder or
+  archive no game claims, alone in its release folder with no other game:
+  that is a port (`sd_files.SEALED_FORWARDER` / `PORT_PART`) -- one card,
+  installable, ticked together. Two such packages, or a real game beside
+  them: NEEDS_REVIEW as before, never guessed.
 - **Only `switch/`, only verbatim.** Every destination is `switch/<path as in
   the release>`; nothing else of a release (a README beside it) is copied to
   the card. A `switch` folder holding packages is a downloads category, one

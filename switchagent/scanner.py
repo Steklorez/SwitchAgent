@@ -1272,7 +1272,16 @@ def assign_sd_file_owners(conn) -> int:
     rows = [row for row in db.list_library_items(conn) if row["status"] != db.LIBRARY_ITEM_RETIRED]
     by_id = {row["id"]: row for row in rows}
     changed = 0
-    owners = {**sd_files.assign_owners(rows), **amiibo_owners(rows)}
+    sd_owners = sd_files.assign_owners(rows)
+    forwarders, port_parts = sd_files.sealed_forwarders(rows, sd_owners)
+    for row in rows:
+        is_forwarder = row["title_id_source"] == sd_files.SEALED_FORWARDER
+        if (row["id"] in forwarders) != is_forwarder:
+            db.set_library_item_sealed_forwarder(conn, row["id"], row["id"] in forwarders)
+            changed += 1
+    for row_id in port_parts:
+        sd_owners[row_id] = (None, sd_files.PORT_PART)
+    owners = {**sd_owners, **amiibo_owners(rows)}
     for row_id, (owner, source) in owners.items():
         row = by_id[row_id]
         if row["title_id"] == owner and row["title_id_source"] == source:

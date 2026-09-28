@@ -32,7 +32,7 @@
 
 {% macro destination_label(e) %}{% if e.content_type == "ATMOSPHERE_MOD" %}SD Card (merge){% elif e.content_type == "SD_FILES" %}SD Card (switch/){% elif e.content_type == "AMIIBO" %}SD Card (emuiibo/amiibo){% elif e.content_type == "EMUIIBO" %}SD Card (emuiibo){% else %}SD Card install{% endif %}{% endmacro %}
 
-{% macro game_card(e, family=None, family_name=None, warning=None) %}
+{% macro game_card(e, family=None, family_name=None, warning=None, select_family=None) %}
 <div class="card {{ 'recent-transfer' if e.recent_transfer_until }}" data-id="{{ e.id }}" data-recent-until="{{ e.recent_transfer_until or '' }}">
   {% if family %}<a class="tile-art" href="/games/{{ family }}" aria-label="{{ e.name }} — details">
   {% else %}<button type="button" class="tile-art card-body" data-detail-url="/api/library/{{ e.id }}" aria-label="{{ e.name }} — details">{% endif %}
@@ -44,7 +44,7 @@
            data-size="{{ e.size }}" data-destination="{{ destination_label(e) }}"
            data-cover-id="{{ family or e.base_title_id or '' }}"
            data-existing-copy="{{ '1' if (e.confirmed_on_device or e.status in ('INSTALLED', 'INSTALLED_UNVERIFIED')) else '' }}"
-           {% if family %}data-family="{{ family }}" data-role="base" data-family-name="{{ family_name }}"{% endif %}
+           {% if family or select_family %}data-family="{{ family or select_family }}" data-role="base" data-family-name="{{ family_name }}"{% endif %}
            {{ "disabled" if not e.can_install }}>
   </label>
   <div class="card-body" data-detail-url="/api/library/{{ e.id }}">
@@ -266,7 +266,8 @@
            switch/ folder that belongs to no game -- opens the detail modal
            instead of linking to a page that does not exist. #}
         {{ game_card(g.base, family=g.base_title_id if g.has_detail_page else None, family_name=g.name,
-                     warning=g.launch_missing) }}
+                     warning=g.launch_missing,
+                     select_family=g.base_title_id if g.base_title_id.startswith("port-") else None) }}
       {% else %}
       <div class="card card-no-base">
         <div class="card-name" title="{{ g.name }}">{{ g.name }}</div>

@@ -420,6 +420,52 @@ def assign_owners(rows) -> dict[int, tuple[Optional[str], Optional[str]]]:
     return owners
 
 
+# A forwarder whose package gives nothing away (field report, 2026-09-28:
+# Need for Speed: Most Wanted's port -- no [TITLE_ID] in its name, every NCA
+# encrypted, so neither its TITLE_ID nor the .nro it launches can be read
+# without the console's keys). Its release folder still says what it is:
+#
+#   Need-For-Speed-Most-Wanted/
+#     Need-for-Speed-Most-Wanted.nsp   326 KB -- the forwarder
+#     switch/nfsmw-nx/...              5.9 GB -- what it launches
+#
+# One forwarder-sized package with no TITLE_ID, a switch/ folder (or archive)
+# no game claims, side by side in the same folder, and no other game there:
+# that is a port, one card, installed together. Anything less clear-cut --
+# two such packages, a real game beside them -- stays as it was.
+SEALED_FORWARDER = "sealed_forwarder"
+PORT_PART = "port"
+
+
+def sealed_forwarders(rows, owners: dict[int, tuple[Optional[str], Optional[str]]]) -> tuple[set[int], set[int]]:
+    """(package row ids that are a port's sealed forwarder, SD_FILES row ids
+    that are that port's files) -- see SEALED_FORWARDER. `owners` is
+    assign_owners' answer: an SD part some game already claims is that
+    game's, not a port's."""
+    candidates: dict[str, list[int]] = {}
+    games_in: set[str] = set()
+    parts_in: dict[str, list[int]] = {}
+    for row in rows:
+        folder = str(Path(row["absolute_path"]).parent)
+        if row["content_type"] == ContentType.GAME_PACKAGE.value:
+            if _family(row["title_id"]):
+                games_in.add(folder)
+            elif ((row["size"] or 0) <= FORWARDER_MAX_BYTES
+                    and row["status"] in ("NEEDS_REVIEW", "AVAILABLE")
+                    and row["title_id_source"] in (None, SEALED_FORWARDER)):
+                candidates.setdefault(folder, []).append(row["id"])
+        elif row["content_type"] == ContentType.SD_FILES.value:
+            if owners.get(row["id"], (None, None))[0] is None:
+                parts_in.setdefault(folder, []).append(row["id"])
+    forwarders: set[int] = set()
+    parts: set[int] = set()
+    for folder, ids in candidates.items():
+        if len(ids) == 1 and folder in parts_in and folder not in games_in:
+            forwarders.add(ids[0])
+            parts.update(parts_in[folder])
+    return forwarders, parts
+
+
 def provider_of(launches: str, parts: Iterable[tuple[str, Optional[SdSummary]]]) -> Optional[str]:
     """The label of the first part whose files include `launches`, or None.
     Compared case-insensitively, because the SD card's own filesystem is."""
