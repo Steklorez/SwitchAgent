@@ -435,6 +435,9 @@ def assign_owners(rows) -> dict[int, tuple[Optional[str], Optional[str]]]:
 # two such packages, a real game beside them -- stays as it was.
 SEALED_FORWARDER = "sealed_forwarder"
 PORT_PART = "port"
+# assign_owners' answer for a part that came with a game's release without
+# being needed by it (see its own comment).
+RELEASE_PART = "release"
 
 
 def sealed_forwarders(rows, owners: dict[int, tuple[Optional[str], Optional[str]]]) -> tuple[set[int], set[int]]:

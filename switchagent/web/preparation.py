@@ -93,7 +93,7 @@ def remove_extraction(path):
         shutil.rmtree(path)
 
 
-_VARIANT_RANK = {'BASE': 0, 'UPDATE': 1, 'DLC': 1, 'MOD': 2}
+_VARIANT_RANK = {'SD_FILES': -1, 'BASE': 0, 'UPDATE': 1, 'DLC': 1, 'MOD': 2}
 
 
 def _variant_rank(row) -> int:
@@ -106,6 +106,16 @@ def _variant_rank(row) -> int:
     if row is None:
         return 1
     from ..model import ContentType
+    from .. import sd_files
+    if row['content_type'] == ContentType.SD_FILES.value and row['title_id_source'] != sd_files.RELEASE_PART:
+        # A port's switch/ folder goes BEFORE its forwarder (by explicit
+        # request, 2026-09-28): the forwarder is what puts the icon on the
+        # home menu, so it comes last -- the icon appears once what it
+        # launches is all on the card, and never if that did not arrive
+        # (a stopped item stops the rest of its chain). A companion app that
+        # merely came with the release ("release") is not needed by the
+        # game and keeps its place after it.
+        return _VARIANT_RANK['SD_FILES']
     if row['content_type'] in (ContentType.ATMOSPHERE_MOD.value, ContentType.SD_FILES.value,
                                ContentType.AMIIBO.value):
         # A game's switch/ folder and its amiibo go after the game itself,
@@ -117,6 +127,16 @@ def _variant_rank(row) -> int:
     except (ValueError, TypeError, AttributeError):
         return 1
     return _VARIANT_RANK.get(variant, 1)
+
+
+def _port_chain_key(row):
+    """A port with a sealed forwarder has no TITLE_ID to chain by; its
+    forwarder and its switch/ files share a release folder instead (see
+    sd_files.SEALED_FORWARDER), and that is what keeps them one chain."""
+    from .. import sd_files
+    if row is None or row['title_id_source'] not in (sd_files.SEALED_FORWARDER, sd_files.PORT_PART):
+        return None
+    return f"port-{Path(row['absolute_path']).parent}"
 
 
 def _group_by_title(conn, item_ids):
@@ -140,7 +160,8 @@ def _group_by_title(conn, item_ids):
         row = db.get_library_item_by_id(conn, item_id)
         rows_by_id[item_id] = row
         family = family_base_title_id(row['title_id']) if row else None
-        key = family if family is not None else f'item-{item_id}'
+        port = _port_chain_key(row)
+        key = family if family is not None else port if port is not None else f'item-{item_id}'
         chains.setdefault(key, []).append(item_id)
     for key, ids in chains.items():
         ids.sort(key=lambda item_id: _variant_rank(rows_by_id[item_id]))

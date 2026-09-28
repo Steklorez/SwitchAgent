@@ -380,9 +380,10 @@ def test_installing_zuma_puts_the_forwarder_in_dbi_and_the_folder_on_the_card(is
     folder = _megaman(config.LIBRARY_DIR)
     scanner.scan_library_once(conn)
     game = _game(services.list_library_view(conn, kind="games"), MEGAMAN_ID)
-    # Selecting the game selects every part of it (library.js); the SD
-    # parts are deliberately submitted FIRST here: the order a user clicks
-    # in must not let them overtake the game.
+    # Selecting the game selects every part of it (library.js). Which goes
+    # first is the preparation's call (switch/ folder, then the forwarder --
+    # see test_a_ports_files_go_before_its_forwarder); at the worker, an SD
+    # part no longer waits for a game job.
     ids = [e["id"] for e in game["sd_files"]] + [game["base"]["id"]]
 
     parent, registry = _backend()
@@ -398,7 +399,7 @@ def test_installing_zuma_puts_the_forwarder_in_dbi_and_the_folder_on_the_card(is
         assert all(f.dest_relative_path.startswith("switch/mmxregenesis_nx/") for f in manifest.files)
 
     queue_worker.run_worker_once(conn, registry)
-    assert {db.get_job(conn, j["id"])["status"] for j in sd_jobs} == {"WAITING_FOR_BASE"}
+    assert "WAITING_FOR_BASE" not in {db.get_job(conn, j["id"])["status"] for j in sd_jobs}
 
     _run_worker(conn, registry)
     assert {db.get_job(conn, j["id"])["status"] for j in jobs} <= {"DONE", "DONE_UNVERIFIED"}

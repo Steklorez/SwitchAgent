@@ -128,3 +128,84 @@ def test_without_its_switch_folder_it_goes_back_to_needing_review(isolated_db, m
     nsp = _row(conn, release / "Need-for-Speed-Most-Wanted.nsp")
     assert nsp["status"] == "NEEDS_REVIEW"
     assert nsp["title_id_source"] is None
+
+
+def test_the_rule_applies_at_start_without_a_scan(tmp_path, monkeypatch):
+    """After an update that learned the rule, the Library groups the port
+    as soon as the app starts -- nothing scans at start."""
+    import time
+
+    from switchagent import known_folders
+    from switchagent.web.context import build_mock_context
+
+    library = tmp_path / "library"
+    library.mkdir()
+    monkeypatch.setattr(config, "LIBRARY_DIR", library)
+    monkeypatch.setattr(config, "WORK_DIR", tmp_path / "work")
+    monkeypatch.setattr(config, "INBOX_DIR", tmp_path / "inbox")
+    monkeypatch.setattr(config, "CONFIG_YAML_PATH", tmp_path / "config.yaml")
+    monkeypatch.setattr(known_folders, "downloads_dir", lambda: None)
+    release = _release(library)
+    db_path = tmp_path / "test.db"
+    with db.open_db(db_path) as conn:
+        _scan(conn, monkeypatch)
+        nsp = _row(conn, release / "Need-for-Speed-Most-Wanted.nsp")
+        # What an index written by a version without the rule looks like.
+        db.set_library_item_sealed_forwarder(conn, nsp["id"], False)
+        db.set_library_item_title_id(conn, _row(conn, release / "switch")["id"], title_id=None, source=None)
+
+    ctx = build_mock_context(db_path)
+    ctx.start_worker()
+    try:
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            with db.open_db(db_path) as conn:
+                if _row(conn, release / "Need-for-Speed-Most-Wanted.nsp")["status"] == "AVAILABLE":
+                    break
+            time.sleep(0.1)
+    finally:
+        ctx.stop_worker()
+    with db.open_db(db_path) as conn:
+        assert _row(conn, release / "Need-for-Speed-Most-Wanted.nsp")["status"] == "AVAILABLE"
+        assert _row(conn, release / "switch")["title_id_source"] == sd_files.PORT_PART
+
+
+# -- install order: a port's files first, its forwarder last ------------------
+
+def test_a_sealed_ports_files_go_before_its_forwarder_in_one_chain(isolated_db, monkeypatch):
+    from switchagent.web.preparation import _group_by_title
+
+    conn, _ = isolated_db
+    release = _release(config.LIBRARY_DIR)
+    _scan(conn, monkeypatch)
+    nsp = _row(conn, release / "Need-for-Speed-Most-Wanted.nsp")["id"]
+    files = _row(conn, release / "switch")["id"]
+
+    chains = _group_by_title(conn, [nsp, files])
+
+    assert list(chains.values()) == [[files, nsp]]
+
+
+def test_a_titled_ports_files_go_before_its_forwarder(isolated_db, monkeypatch):
+    from switchagent.web.preparation import _group_by_title
+
+    conn, _ = isolated_db
+    release = _release(config.LIBRARY_DIR, nsp="Port [0100000000010000][v0].nsp")
+    _scan(conn, monkeypatch)
+    nsp = _row(conn, release / "Port [0100000000010000][v0].nsp")["id"]
+    files = _row(conn, release / "switch")["id"]
+
+    assert _group_by_title(conn, [nsp, files]) == {"0100000000010000": [files, nsp]}
+
+
+def test_a_companion_app_that_came_with_the_game_still_goes_after_it(isolated_db, monkeypatch):
+    from switchagent.web.preparation import _variant_rank
+
+    conn, _ = isolated_db
+    release = _release(config.LIBRARY_DIR, nsp="Port [0100000000010000][v0].nsp")
+    _scan(conn, monkeypatch)
+    row = _row(conn, release / "switch")
+    db.set_library_item_title_id(conn, row["id"], title_id="0100000000010000", source=sd_files.RELEASE_PART)
+
+    assert _variant_rank(_row(conn, release / "switch")) > _variant_rank(
+        _row(conn, release / "Port [0100000000010000][v0].nsp"))

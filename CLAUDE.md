@@ -153,6 +153,13 @@ the real Zuma / Mega Man layouts, so change a test on purpose or not at all:
   that is a port (`sd_files.SEALED_FORWARDER` / `PORT_PART`) -- one card,
   installable, ticked together. Two such packages, or a real game beside
   them: NEEDS_REVIEW as before, never guessed.
+- **A port's files first, its forwarder last.** The forwarder is what puts
+  the icon on the home menu, so it installs after its `switch/` files --
+  the icon appears once everything it launches is on the card, and not at
+  all if the files did not arrive (a stopped item stops its chain). This is
+  the preparation's order (`preparation._variant_rank`); at the worker an
+  SD part never waits for a game job. A companion app that merely came
+  with the release ("release") still goes after the game.
 - **Only `switch/`, only verbatim.** Every destination is `switch/<path as in
   the release>`; nothing else of a release (a README beside it) is copied to
   the card. A `switch` folder holding packages is a downloads category, one
