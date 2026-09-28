@@ -226,7 +226,7 @@
 
   // A preparation item that has no job yet, in the same words as a job.
   const PHASE_LABELS = {
-    Waiting: "Queued", Prepared: "Ready to install", Analyzing: "Checking", Extracting: "Unpacking",
+    Waiting: "Queued", Prepared: "Up next", Analyzing: "Checking", Extracting: "Unpacking",
     Preparing: "Preparing", Installing: "Starting", Cleaning: "Cleaning up", Ready: "Done", Failed: "Failed",
   };
 

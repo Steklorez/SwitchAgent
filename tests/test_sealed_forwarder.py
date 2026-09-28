@@ -229,3 +229,24 @@ def test_the_card_says_the_size_of_the_whole_game(web_ctx, client, monkeypatch):
 
     sizes = re.findall(r'class="card-size"\s+data-card-family="port-\d+" data-total="(\d+)"', page)
     assert sizes == [str(expected)]
+
+
+def test_queue_lists_a_port_in_install_order_not_click_order(isolated_db, monkeypatch, tmp_path):
+    """Ticked forwarder-first, the port was listed forwarder-first -- on top,
+    "Ready to install", while its files copied below it: it looked as if the
+    first item were being skipped (field report, 2026-09-28)."""
+    from switchagent.web.preparation import PreparationQueue
+
+    conn, _ = isolated_db
+    release = _release(config.LIBRARY_DIR)
+    _scan(conn, monkeypatch)
+    nsp = _row(conn, release / "Need-for-Speed-Most-Wanted.nsp")["id"]
+    files = _row(conn, release / "switch")["id"]
+    monkeypatch.setattr(PreparationQueue, "_install_sequentially",
+                        lambda *_a, **_k: {"created": [], "errors": [], "batch_id": None, "blocked": []})
+    queue = PreparationQueue(tmp_path / "test.db")
+
+    queue.submit([nsp, files], DEVICE)
+
+    items = next(iter(queue.states.values()))["items"]
+    assert items[str(files)]["order"] < items[str(nsp)]["order"]

@@ -222,7 +222,15 @@ class PreparationQueue:
         items = {}
         with db.open_db(self.db_path) as conn:
             chains = _group_by_title(conn, item_ids)
-            for position, item_id in enumerate(item_ids):
+            # Queue lists a run's items in the order they will INSTALL, not
+            # the order they were ticked in: a port's forwarder was ticked
+            # first but installs last, and listed first it sat at the top
+            # reading "Ready to install" while its files copied below it --
+            # which looked like the first item being skipped (2026-09-28).
+            install_order = {member: n for n, member in enumerate(
+                member for members in chains.values() for member in members)}
+            for item_id in item_ids:
+                position = install_order[item_id]
                 row = db.get_library_item_by_id(conn, item_id)
                 # The SAME resolver display_name_for_job() uses once this
                 # item becomes a real job (full filename, extension and
