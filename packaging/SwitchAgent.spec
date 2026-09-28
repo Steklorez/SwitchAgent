@@ -93,6 +93,18 @@ datas = collect_data_files("switchagent.web", includes=["templates/*", "static/*
 # lookup would silently fall back to the "0.0.0+unknown" placeholder.
 datas += copy_metadata("switchagent")
 
+# Which source this build is: branch, commit, uncommitted changes, when
+# (switchagent/build_info.py). Written under build/, never into the source
+# tree, and shipped next to build_info.py, where it looks for it -- a local
+# test build then says what it is instead of passing for the release.
+import json as _json  # noqa: E402
+from switchagent import build_info as _build_info  # noqa: E402
+
+_BUILD_FILE = PROJECT_ROOT / "build" / "_build.json"
+_BUILD_FILE.parent.mkdir(parents=True, exist_ok=True)
+_BUILD_FILE.write_text(_json.dumps(_build_info.collect(PROJECT_ROOT)), encoding="utf-8")
+datas += [(str(_BUILD_FILE), "switchagent")]
+
 # Proven-necessary hidden imports only (see this file's own history / the
 # packaging report for what was actually observed missing during a real
 # packaged run -- not a speculative list). uvicorn resolves its event

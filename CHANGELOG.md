@@ -7,6 +7,12 @@ Entries are one sentence per change, three to five lines per release, and
 only what a user would notice — no internals, no reasoning, no history.
 Those belong in the commit message. See [CLAUDE.md](CLAUDE.md#how-to-write-an-entry).
 
+## v1.0.23
+
+- A homebrew port whose package does not say which game it is (Need for Speed: Most Wanted) shows as one game with its SD files and installs like any other.
+- A port's SD files install before the game itself, so its icon appears only once everything it needs is on the card, and Queue lists them in that order.
+- A game's card shows the size of the whole game, or of just the parts you have ticked.
+
 ## v1.0.22
 
 - The Library only shows something as installed while the Switch it went to is connected.

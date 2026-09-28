@@ -14,7 +14,7 @@
 </head>
 <body>
 <header class="topbar">
-  <div class="topbar-title">SwitchAgent <span class="build-version">v{{ app_version }}</span></div>
+  <div class="topbar-title">SwitchAgent <span class="build-version" title="{{ build_description }}">v{{ app_version }}{% if build_label %}<span class="build-label"> · {{ build_label }}</span>{% endif %}</span></div>
   <div id="storage-bar" class="storage-bar" hidden>
     <div class="storage-bar-track">
       <div class="storage-bar-fill storage-bar-used" id="storage-bar-used"></div>

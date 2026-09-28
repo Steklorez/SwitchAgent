@@ -598,6 +598,16 @@ class WebContext:
         recovered = db.recover_stale_running_jobs(conn)
         if recovered:
             log.info("worker startup: recovered %d stale RUNNING job(s) -> INTERRUPTED", recovered)
+        # Which game each switch/ folder, amiibo collection and sealed
+        # forwarder belongs to is otherwise only decided at the end of a
+        # scan -- and nothing scans at start. After an update that learned a
+        # new rule, the Library went on showing the old grouping until
+        # something happened to trigger one (a port showed as two cards for
+        # ~20s, 2026-09-28). A pass over the index only, no disk walk.
+        from .. import scanner as scanner_mod
+        regrouped = scanner_mod.assign_sd_file_owners(conn)
+        if regrouped:
+            log.info("worker startup: regrouped %d library item(s)", regrouped)
         # Staged but never confirmed, and now unconfirmable -- the in-memory
         # preparation that owned these did not survive the restart. Their
         # batches' staging is released here the same way preparation.py's

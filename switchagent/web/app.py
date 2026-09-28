@@ -18,7 +18,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTex
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .. import __version__, db
+from .. import __version__, build_info, db
 from .. import title_id as title_id_mod
 from . import addons_views, amiibo_views, detail_views, error_reporting, onboarding, services
 from .context import WebContext
@@ -128,6 +128,8 @@ def _static_url(name: str) -> str:
 _TEMPLATES.env.filters["filesize"] = _format_size
 _TEMPLATES.env.filters["mtime"] = _format_mtime
 _TEMPLATES.env.globals["app_version"] = __version__
+_TEMPLATES.env.globals["build_label"] = build_info.label()
+_TEMPLATES.env.globals["build_description"] = build_info.describe()
 _TEMPLATES.env.globals["static_url"] = _static_url
 _TEMPLATES.env.filters["game_name"] = title_id_mod.strip_release_tags
 _TEMPLATES.env.filters["rich"] = addons_views.rich

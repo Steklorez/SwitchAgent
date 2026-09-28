@@ -1190,6 +1190,28 @@ def upsert_library_item(
     return existing["id"]
 
 
+def set_library_item_sealed_forwarder(conn: sqlite3.Connection, item_id: int, sealed: bool) -> None:
+    """A package whose TITLE_ID cannot be read, recognised (or no longer)
+    as a port's forwarder by the folder it sits in -- see
+    sd_files.SEALED_FORWARDER. Installable while it is one; back to
+    NEEDS_REVIEW, exactly as the scanner left it, once it is not."""
+    if sealed:
+        conn.execute(
+            "UPDATE library_items SET status = 'AVAILABLE', title_id_source = ?, "
+            "suggested_action = 'INSTALL_VIA_DBI', suggested_target = 'SD_INSTALL', note = ? WHERE id = ?",
+            ("sealed_forwarder",
+             "a port's forwarder: installed together with the switch/ folder beside it "
+             "(its TITLE_ID is sealed inside the package)", item_id),
+        )
+    else:
+        conn.execute(
+            "UPDATE library_items SET status = 'NEEDS_REVIEW', title_id_source = NULL, "
+            "suggested_action = NULL, suggested_target = NULL, note = ? WHERE id = ?",
+            ("could not unambiguously determine TITLE_ID from the filename -- needs human review", item_id),
+        )
+    conn.commit()
+
+
 def set_library_item_title_id(
     conn: sqlite3.Connection, item_id: int, *, title_id: Optional[str], source: Optional[str],
 ) -> None:

@@ -230,6 +230,7 @@ def _library_entry_view(
         "mtime": row["mtime"],
         "content_hash": row["content_hash"],
         "title_id": row["title_id"],
+        "title_id_source": row["title_id_source"],
         "title_id_confident": bool(row["title_id_confident"]),
         "status": display_status,
         "library_status": row["status"],
@@ -696,9 +697,16 @@ def list_library_view(
             mods_by_base.setdefault(m["title_id"], []).append(m)
 
     families: dict[str, dict] = {}
+    # A port whose forwarder keeps its TITLE_ID sealed (sd_files.
+    # SEALED_FORWARDER) is still one card: keyed by its release folder,
+    # which is how its switch/ files were matched to it at scan time.
+    port_family_by_folder: dict[str, str] = {}
     for e in packages:
         if e["title_id"]:
             variant, base_id = title_id_mod.classify_title_variant(e["title_id"])
+        elif e["title_id_source"] == sd_files.SEALED_FORWARDER:
+            variant, base_id = "BASE", f"port-{e['id']}"
+            port_family_by_folder[str(Path(e["absolute_path"]).parent)] = base_id
         else:
             variant, base_id = "BASE", f"unknown-{e['id']}"  # never grouped with anything else
         fam = families.setdefault(base_id, {"base_title_id": base_id, "bases": [], "updates": [], "dlc": []})
@@ -739,6 +747,8 @@ def list_library_view(
     standalone_sd = []
     for e in sd_parts:
         family = family_base_title_id(e["title_id"])
+        if family is None and e["title_id_source"] == sd_files.PORT_PART:
+            family = port_family_by_folder.get(str(Path(e["absolute_path"]).parent))
         if family is not None and family in families:
             sd_by_base.setdefault(family, []).append(e)
         else:
@@ -1697,6 +1707,22 @@ def _sub_report_for_entry(report, entry):
 
 
 def _apply_library_row(report, row) -> None:
+    _apply_sealed_forwarder(report, row)
+    _apply_library_row_owner(report, row)
+
+
+def _apply_sealed_forwarder(report, row) -> None:
+    """A port's forwarder (sd_files.SEALED_FORWARDER): the package itself
+    is known and is sent as it is -- only its TITLE_ID is not, and nothing
+    about sending it to DBI needs one."""
+    if (row["title_id_source"] == sd_files.SEALED_FORWARDER
+            and report.content_type is ContentType.GAME_PACKAGE and report.package_relative_path is None):
+        report.package_relative_path = Path(report.source).name
+        report.destination = "SD install"
+        report.mode = "INSTALL"
+
+
+def _apply_library_row_owner(report, row) -> None:
     """A switch/ folder's own files carry no TITLE_ID; the game it belongs
     to is what the scan decided and what Library grouped it under
     (library_items.title_id, see sd_files.assign_owners). The job inherits

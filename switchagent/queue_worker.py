@@ -232,11 +232,17 @@ def _dependency_status(conn: sqlite3.Connection, manifest, target_device_id: str
     other "cannot determine, so don't guess" rule in this codebase."""
     if not manifest.title_id:
         return None
+    if manifest.content_type == ContentType.SD_FILES.value:
+        # A game's switch/ folder is copied BEFORE the game now, not after
+        # it (web/preparation._variant_rank: a port's forwarder comes last,
+        # so its icon appears only once what it launches is on the card).
+        # Waiting here for a base job would deadlock against the forwarder
+        # job the preparation already created behind it.
+        return None
 
     if manifest.content_type in _TAGGED_WITH_FAMILY_ID:
-        # mods are tagged with the base's own TITLE_ID directly, and so is a
-        # game's switch/ folder (sd_files.assign_owners) -- neither is ever
-        # a base game itself, so both wait behind one that is in flight.
+        # mods are tagged with the base's own TITLE_ID directly -- never a
+        # base game itself, so it waits behind one that is in flight.
         base_title_id = manifest.title_id
     else:
         variant, base_title_id = title_id_mod.classify_title_variant(manifest.title_id)

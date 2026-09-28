@@ -193,7 +193,14 @@ def _run_primary_instance(args: argparse.Namespace) -> int:
     try:
         from . import tray
 
-        tray.run_tray_icon(on_open=lambda: _open_browser(args.port))
+        from . import build_info
+
+        # Hovering the tray icon says which build this is (a Windows tray
+        # tooltip holds at most 127 characters).
+        tray.run_tray_icon(
+            on_open=lambda: _open_browser(args.port),
+            tooltip=f"SwitchAgent {build_info.describe()}"[:127],
+        )
     except Exception:
         log.exception("tray icon unavailable -- falling back to running until the HTTP server stops")
         try:
