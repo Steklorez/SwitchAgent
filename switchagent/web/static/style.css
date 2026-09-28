@@ -71,7 +71,7 @@ a { color: var(--accent); text-decoration: none; }
 /* A test build's branch and commit (build_info.label): in the warning
    colour, so a local build is never mistaken for the release; cut short
    rather than pushing the header apart -- the tooltip has it all. */
-.build-label { color: var(--warn); display: inline-block; max-width: 22ch; overflow: hidden;
+.build-label { color: var(--warn); display: inline-block; max-width: 44ch; overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 .device-pill {
   font-size: 0.85rem; padding: 4px 10px; border-radius: 999px;
