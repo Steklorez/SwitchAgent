@@ -32,7 +32,7 @@
 
 {% macro destination_label(e) %}{% if e.content_type == "ATMOSPHERE_MOD" %}SD Card (merge){% elif e.content_type == "SD_FILES" %}SD Card (switch/){% elif e.content_type == "AMIIBO" %}SD Card (emuiibo/amiibo){% elif e.content_type == "EMUIIBO" %}SD Card (emuiibo){% else %}SD Card install{% endif %}{% endmacro %}
 
-{% macro game_card(e, family=None, family_name=None, warning=None, select_family=None) %}
+{% macro game_card(e, family=None, family_name=None, warning=None, select_family=None, total_size=None) %}
 <div class="card {{ 'recent-transfer' if e.recent_transfer_until }}" data-id="{{ e.id }}" data-recent-until="{{ e.recent_transfer_until or '' }}">
   {% if family %}<a class="tile-art" href="/games/{{ family }}" aria-label="{{ e.name }} — details">
   {% else %}<button type="button" class="tile-art card-body" data-detail-url="/api/library/{{ e.id }}" aria-label="{{ e.name }} — details">{% endif %}
@@ -49,7 +49,11 @@
   </label>
   <div class="card-body" data-detail-url="/api/library/{{ e.id }}">
     <div class="card-name" title="{{ e.name }}">{{ e.name|game_name }}</div>
-    <div class="card-meta tile-meta"><span>{{ e.package_format or e.file_type }}</span><span>{{ e.size|filesize }}</span></div>
+    {# The whole game by default -- base, updates, DLC, its SD files: a
+       port's card is a 326 KB forwarder but a 6 GB install. Once some of
+       its parts are ticked, what is ticked (library.js updateCardSizes). #}
+    <div class="card-meta tile-meta"><span>{{ e.package_format or e.file_type }}</span><span class="card-size"
+      {% if family or select_family %}data-card-family="{{ family or select_family }}" data-total="{{ total_size or e.size }}"{% endif %}>{{ (total_size or e.size)|filesize }}</span></div>
     <div class="card-meta tile-meta"><span>Added</span><time datetime="{{ e.first_seen_at }}">{{ e.first_seen_at[:16]|replace('T', ' ') }}</time></div>
     {% if e.content_type == "SD_FILES" %}<div class="card-meta sd-destination" title="Copied to the SD card as it is">→ {{ e.sd_destinations|join(", ") }}</div>{% endif %}
     {% if e.content_type == "AMIIBO" and e.amiibo %}
@@ -267,7 +271,8 @@
            instead of linking to a page that does not exist. #}
         {{ game_card(g.base, family=g.base_title_id if g.has_detail_page else None, family_name=g.name,
                      warning=g.launch_missing,
-                     select_family=g.base_title_id if g.base_title_id.startswith("port-") else None) }}
+                     select_family=g.base_title_id if g.base_title_id.startswith("port-") else None,
+                     total_size=g.total_size) }}
       {% else %}
       <div class="card card-no-base">
         <div class="card-name" title="{{ g.name }}">{{ g.name }}</div>

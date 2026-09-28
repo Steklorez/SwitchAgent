@@ -68,6 +68,11 @@ a { color: var(--accent); text-decoration: none; }
 }
 .topbar-title { font-weight: 700; font-size: 1.05rem; }
 .build-version { margin-left: 8px; font-size: .75rem; font-weight: 400; color: var(--text-dim); }
+/* A test build's branch and commit (build_info.label): in the warning
+   colour, so a local build is never mistaken for the release; cut short
+   rather than pushing the header apart -- the tooltip has it all. */
+.build-label { color: var(--warn); display: inline-block; max-width: 22ch; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 .device-pill {
   font-size: 0.85rem; padding: 4px 10px; border-radius: 999px;
   background: var(--surface-2); color: var(--text-dim);

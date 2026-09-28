@@ -13,6 +13,7 @@ from switchagent.mtp import MockMtpBackend
 from switchagent.web import services
 
 from .test_loose_nro import make_nro
+from .test_web_api import client, web_ctx  # noqa: F401 -- fixtures
 
 DEVICE = "mock-switch"
 FORWARDER = b"PFS0" + bytes(4000)  # encrypted NCAs: nothing readable inside
@@ -209,3 +210,22 @@ def test_a_companion_app_that_came_with_the_game_still_goes_after_it(isolated_db
 
     assert _variant_rank(_row(conn, release / "switch")) > _variant_rank(
         _row(conn, release / "Port [0100000000010000][v0].nsp"))
+
+
+def test_the_card_says_the_size_of_the_whole_game(web_ctx, client, monkeypatch):
+    """A port's card is its 4 KB forwarder, but installing it is the whole
+    switch/ folder too: the card shows what the game weighs, not its base."""
+    import re
+
+    release = _release(config.LIBRARY_DIR)
+    with db.open_db(web_ctx.db_path) as conn:
+        _scan(conn, monkeypatch)
+        expected = sum(
+            db.get_library_item(conn, str(p))["size"]
+            for p in (release / "Need-for-Speed-Most-Wanted.nsp", release / "switch")
+        )
+
+    page = client.get("/").text
+
+    sizes = re.findall(r'class="card-size"\s+data-card-family="port-\d+" data-total="(\d+)"', page)
+    assert sizes == [str(expected)]

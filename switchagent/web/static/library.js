@@ -51,11 +51,29 @@
     });
     selectionSize.textContent = formatBytes(totalSize);
     selectionBar.hidden = n === 0;
+    updateCardSizes();
     // Lets app.js's header SD card space bar show the estimated space the
     // current selection would take up, without this file needing to know
     // anything about that bar's markup or rendering.
     document.dispatchEvent(new CustomEvent("storage:selection-changed", { detail: { bytes: newSpaceSize } }));
   }
+  // A game card's size: the whole game while none of its parts is ticked,
+  // the sum of the ticked ones once some are -- so the card agrees with the
+  // selection bar and the storage estimate above it.
+  function updateCardSizes() {
+    document.querySelectorAll(".card-size[data-card-family]").forEach((label) => {
+      const boxes = document.querySelectorAll(`.select-box[data-family="${CSS.escape(label.dataset.cardFamily)}"]`);
+      let ticked = 0;
+      let sum = 0;
+      boxes.forEach((box) => {
+        if (!box.checked) return;
+        ticked += 1;
+        sum += parseInt(box.dataset.size, 10) || 0;
+      });
+      label.textContent = formatBytes(ticked ? sum : parseInt(label.dataset.total, 10) || 0);
+    });
+  }
+
   updateSelectionBar();
 
   // Auto-select the target Switch when exactly one is currently connected
