@@ -24,8 +24,9 @@ again when its manifest is built.
 
 On a console, an add-on is installed when all its `sign` files are there;
 its version is read from the NACP of its `version_from` file (a .ovl/.nro
-of at most CONSOLE_READ_MAX_BYTES -- a 17 MB app is not read back just to
-learn its version). Files a person edits (`keep`, e.g. a config.ini) are
+of at most CONSOLE_PROGRAM_MAX_BYTES, once per size). An add-on found
+somewhere else -- the same NACP name at another path -- is "elsewhere":
+installed, and not written a second time. Files a person edits (`keep`, e.g. a config.ini) are
 written when missing and never replaced.
 """
 
@@ -58,6 +59,9 @@ MAX_ASSET_BYTES = 64 * 1024 * 1024
 # Reading a program back off a console to learn its version: overlays are
 # ~1 MB; a big app is left at "installed".
 CONSOLE_READ_MAX_BYTES = 4 * 1024 * 1024
+# A program on a console is read back whole to name it (its NACP lies past
+# its code): JKSV is 10 MB, sphaira 5 MB. Once per size, then remembered.
+CONSOLE_PROGRAM_MAX_BYTES = 64 * 1024 * 1024
 # kefir (github.com/rashevskyv/kefir) ships and updates some of these
 # itself; its updater app is how a console running it is recognised.
 KEFIR_SIGN = "switch/kefir-updater/kefir-updater.nro"
@@ -551,50 +555,113 @@ def console_paths(catalog: list[Addon]) -> list[str]:
     return list(dict.fromkeys(paths))
 
 
+# Where a person's homebrew can be, besides where the catalog puts it: the
+# Homebrew Menu itself (sphaira often takes its place as /hbmenu.nro), a
+# loose .nro straight in switch/, or any folder one level below it. Every
+# program found there is known by its NACP name, never by its path.
+_PROGRAM_EXTENSIONS = (".nro", ".ovl")
+
+
 def read_device(backend, storage: str, catalog: list[Addon], *,
                 known: Optional[ConsoleAddons] = None) -> Iterator[ConsoleAddons]:
     """Reads which add-ons a console holds, one MTP request at a time (a
     generator, like emuiibo.read_device: the worker thread can stop after
-    any yield and carry on later). Folders are listed once each; a
-    program's version is read back only when its size changed since the
-    last read. The last state yielded has complete=True."""
+    any yield and carry on later). Folders are listed once each and found
+    whatever their case (FAT does not care, MTP does); every program in the
+    places a person puts homebrew is named from its own NACP, so one that
+    lies somewhere else than the catalog's path is still recognised. A
+    program is read back only when its size changed since the last read.
+    The last state yielded has complete=True."""
     state = ConsoleAddons()
     previous = known.programs if known is not None else {}
     paths = console_paths(catalog)
     listings: dict[str, Optional[dict]] = {}
-    for parent in dict.fromkeys(p.rsplit("/", 1)[0] for p in paths):
-        entries = backend.list_directory(storage, parent)
-        listings[parent.lower()] = None if entries is None else {e.name.lower(): e for e in entries}
+    real = {"": ""}  # lower-cased folder path -> as the console spells it
+
+    def list_folder(key: str):
+        if key in listings:
+            return
+        if key:
+            parent, _, name = key.rpartition("/")
+            yield from list_folder(parent)
+            entry = (listings.get(parent) or {}).get(name)
+            if entry is None or not entry.is_dir:
+                listings[key] = None
+                return
+            real[key] = f"{real[parent]}/{entry.name}" if parent else entry.name
+        entries = backend.list_directory(storage, real[key])
+        listings[key] = None if entries is None else {e.name.lower(): e for e in entries}
         yield state
+
+    def found(key: str):
+        parent, _, name = key.rpartition("/")
+        entry = (listings.get(parent) or {}).get(name)
+        if entry is None or entry.is_dir:
+            return None
+        return (f"{real[parent]}/{entry.name}" if parent else entry.name), entry.size
+
+    for parent in dict.fromkeys(p.rsplit("/", 1)[0].lower() for p in paths):
+        yield from list_folder(parent)
+    yield from list_folder("")
+    yield from list_folder("switch")
+    for name, entry in sorted((listings.get("switch") or {}).items()):
+        if entry.is_dir:
+            yield from list_folder(f"switch/{name}")
     state.checked = {p.lower() for p in paths}
+
+    wanted: dict[str, tuple[str, Optional[int]]] = {}  # lower path -> (real path, size)
     for path in paths:
-        parent, _, name = path.rpartition("/")
-        entry = (listings.get(parent.lower()) or {}).get(name.lower())
-        if entry is not None and not entry.is_dir:
-            state.files[path.lower()] = entry.size
+        hit = found(path.lower())
+        if hit is not None:
+            state.files[path.lower()] = hit[1]
+            wanted[path.lower()] = hit
+    for folder in ["", "switch"] + [f"switch/{n}" for n, e in sorted((listings.get("switch") or {}).items())
+                                    if e.is_dir]:
+        for name, entry in sorted((listings.get(folder) or {}).items()):
+            if not entry.is_dir and name.endswith(_PROGRAM_EXTENSIONS):
+                key = f"{folder}/{name}" if folder else name
+                hit = found(key)
+                state.files[key] = hit[1]
+                wanted[key] = hit
     state.kefir = KEFIR_SIGN.lower() in state.files
-    for addon in catalog:
-        spec = addon.spec
-        if spec is None or not spec.version_from:
+
+    versioned = {a.spec.version_from.lower() for a in catalog if a.spec is not None and a.spec.version_from}
+    for key, (path, size) in wanted.items():
+        if key not in versioned and not key.endswith(_PROGRAM_EXTENSIONS):
             continue
-        key = spec.version_from.lower()
-        if key not in state.files or key in state.programs:
-            continue
-        size = state.files[key]
         old = previous.get(key)
-        if old is not None and size is not None and old.get("size") == size:
-            state.programs[key] = old
+        # An entry from before programs were read up to this size (name
+        # None, never "read") is read again once, not trusted forever.
+        if old is not None and size is not None and old.get("size") == size and (
+                old.get("read") or old.get("name") is not None or size > CONSOLE_PROGRAM_MAX_BYTES):
+            state.programs[key] = {**old, "path": path}
             continue
-        if size is None or size > CONSOLE_READ_MAX_BYTES:
-            state.programs[key] = {"name": None, "version": None, "size": size}
+        if size is None or size > CONSOLE_PROGRAM_MAX_BYTES:
+            state.programs[key] = {"name": None, "version": None, "size": size, "path": path}
             continue
-        data = backend.read_file(storage, spec.version_from, max_bytes=CONSOLE_READ_MAX_BYTES)
+        data = backend.read_file(storage, path, max_bytes=CONSOLE_PROGRAM_MAX_BYTES)
         info = nro.nro_info_from_bytes(data) if data else None
         state.programs[key] = {"name": info.name if info else None, "version": info.version if info else None,
-                               "size": size}
+                               "size": size, "path": path, "read": True}
         yield state
     state.complete = True
     yield state
+
+
+def found_elsewhere(addon: Addon, console: ConsoleAddons) -> Optional[tuple[str, dict]]:
+    """(path, program) of this add-on somewhere else than the catalog puts
+    it -- known by the name in its own NACP (sphaira as /hbmenu.nro, JKSV
+    as a loose switch/JKSV.nro). None when it is nowhere, or when the
+    catalog's own path holds it."""
+    spec = addon.spec
+    if spec is None or not spec.version_from:
+        return None
+    own = spec.version_from.lower()
+    for key, program in sorted(console.programs.items()):
+        name = (program.get("name") or "").strip().lower()
+        if key != own and name and name == spec.name.lower():
+            return program.get("path") or key, program
+    return None
 
 
 def status(addon: Addon, console: Optional[ConsoleAddons]) -> Optional[dict]:
@@ -625,6 +692,12 @@ def status(addon: Addon, console: Optional[ConsoleAddons]) -> Optional[dict]:
         missing = [s for s, p in zip(spec.sign, present) if not p]
         return {"state": "partial", "label": f"incomplete — {', '.join(missing)} is missing",
                 "version": version, "other": None, "kefir": kefir}
+    elsewhere = found_elsewhere(addon, console)
+    if elsewhere is not None:
+        path, program = elsewhere
+        version = program.get("version")
+        return {"state": "elsewhere", "label": f"installed{' — ' + version if version else ''} as {path}",
+                "version": version, "other": None, "kefir": False, "path": path}
     return {"state": "missing", "label": "not installed", "version": None, "other": None, "kefir": False}
 
 
@@ -665,4 +738,4 @@ def is_installed(addon: Addon, console: Optional[ConsoleAddons], emuiibo_state: 
         components = (emuiibo_state or {}).get("components") or {}
         return bool(components.get("sysmodule") and components.get("overlay"))
     found = status(addon, console)
-    return bool(found and found["state"] == "installed")
+    return bool(found and found["state"] in ("installed", "elsewhere"))

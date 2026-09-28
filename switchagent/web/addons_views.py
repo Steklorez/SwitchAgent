@@ -115,7 +115,7 @@ def _satisfied(addon: Addon, console: Optional[ConsoleAddons], emuiibo_state: Op
     it is not replaced behind anybody's back -- only an explicit Install of
     Ultrahand replaces it."""
     found = addon_status(addon, console, emuiibo_state)
-    if found and found["state"] in ("installed", "outdated", "other"):
+    if found and found["state"] in ("installed", "outdated", "other", "elsewhere"):
         return True
     if (console is None or (found and found["state"] == "unknown")) and addon.id == "ultrahand" and emuiibo_state:
         # Not (yet) looked for by an add-ons read: emuiibo's own read knows
@@ -160,11 +160,11 @@ def page(conn, ctx, fingerprint: Optional[str] = None) -> dict:
             # Confirmed by GitHub, not just "no news": said so.
             status = {**status, "label": status["label"] + " · latest"}
         record = (installed_record(conn, chosen["device_id"], addon)
-                  if chosen and state in ("installed", "outdated", "partial", "other") else (None, None))
+                  if chosen and state in ("installed", "outdated", "partial", "other", "elsewhere") else (None, None))
         if update:
             button = f"Update to {update['to']}" if update["installed"] else "Reinstall latest"
         else:
-            button = ("Installed" if state == "installed" else
+            button = ("Installed" if state in ("installed", "elsewhere") else
                       "Update" if state in ("outdated", "partial") else
                       "Replace" if state == "other" else "Install")
         entries.append({
@@ -176,14 +176,14 @@ def page(conn, ctx, fingerprint: Optional[str] = None) -> dict:
             # Installed from here unless kefir keeps it updated on this
             # console (two updaters would take turns overwriting it).
             "can_install": bool(addon.installable and connected and not managed
-                                and (state != "installed" or update)),
+                                and state != "elsewhere" and (state != "installed" or update)),
             "button": button,
             "managed": managed,
             "stars": releases["stars"].get(addon.id),
             # For sorting (addons.js): 3 update waiting, 2 installed, 1
             # partly there / someone else's in its place, 0 not there.
             "rank": (3 if update and update["installed"] else
-                     2 if state in ("installed", "outdated") else
+                     2 if state in ("installed", "outdated", "elsewhere") else
                      1 if state in ("partial", "other") else 0),
             "installed_at": record[1],
             "with": ([r.name for r in plan_install(conn, chosen["device_id"], addon.id) if r.id != addon.id]

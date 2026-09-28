@@ -47,7 +47,7 @@
 }
 .addon-status { margin-top: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 8px; }
 .addon-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); flex: none; }
-.addon-status-installed .addon-status-dot { background: var(--ok); }
+.addon-status-installed .addon-status-dot, .addon-status-elsewhere .addon-status-dot { background: var(--ok); }
 .addon-status-outdated .addon-status-dot, .addon-status-partial .addon-status-dot { background: var(--warn); }
 /* Not installed is not a fault: most add-ons are optional. */
 .addon-status-missing .addon-status-dot { background: transparent; box-shadow: inset 0 0 0 1.5px var(--text-dim); }

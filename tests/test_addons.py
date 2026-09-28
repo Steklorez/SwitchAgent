@@ -351,6 +351,32 @@ def test_a_program_is_read_back_only_when_it_changed():
     assert reads == ["switch/.overlays/FPSLocker.ovl"]
 
 
+def test_a_program_is_known_by_its_nacp_wherever_a_person_put_it():
+    # A real kefir card: sphaira in the Homebrew Menu's place, folders
+    # spelled otherwise than the catalog spells them.
+    backend, put = _console()
+    put("hbmenu.nro", make_nro("sphaira", "1.0.7", "TotalJustice"))
+    put("switch/NxThemesInstaller/NxThemesInstaller.nro", make_nro("NXThemes Installer", "2.8.0"))
+    put("switch/ovlEdiZon.ovl", make_nro("Tesla Menu", "1.0"))
+    put("switch/.overlays/ovlEdiZon.ovl", make_nro("EdiZon", "v1.0.15-a12ce33"))
+    put("switch/retroarch_switch.nro", make_nro("RetroArch", "1.19"))
+    state = _read(backend)
+    by_id = {a.id: a for a in addons.load_catalog()}
+    sphaira = addons.status(by_id["sphaira"], state)
+    assert sphaira["state"] == "elsewhere" and sphaira["label"] == "installed — 1.0.7 as hbmenu.nro"
+    assert addons.is_installed(by_id["sphaira"], state)
+    themes = addons.status(by_id["nxthemes"], state)
+    assert themes["state"] == "installed" and themes["version"] == "2.8.0"
+    assert addons.status(by_id["edizon"], state)["state"] == "installed"
+    assert addons.status(by_id["checkpoint"], state)["state"] == "missing"
+    # Named once, then remembered while its size stays the same.
+    reads = []
+    original = backend.read_file
+    backend.read_file = lambda storage, path, **kw: reads.append(path) or original(storage, path, **kw)
+    again = _read(backend, known=addons.ConsoleAddons.from_dict(state.to_dict()))
+    assert reads == [] and addons.status(by_id["sphaira"], again)["state"] == "elsewhere"
+
+
 # ---------------------------------------------------------------------------
 # Install: from GitHub, requirements first, all or nothing
 # ---------------------------------------------------------------------------
