@@ -256,5 +256,20 @@ def run_tray_icon(*, on_open: Callable[[], None], tooltip: str = "SwitchAgent") 
     interactive desktop session, which can happen when SwitchAgent is
     launched under a service account) is raised to the caller, which
     falls back to a non-tray shutdown path (see desktop.py)."""
+    global _active_window
     window = _TrayWindow(on_open=on_open, tooltip=tooltip)
-    window.run()
+    _active_window = window
+    try:
+        window.run()
+    finally:
+        _active_window = None
+
+
+_active_window: "Optional[_TrayWindow]" = None
+
+
+def close_active() -> None:
+    """Ends run_tray_icon() from any thread, as if Exit were clicked (an
+    app update needs SwitchAgent gone before it can replace its files)."""
+    if _active_window is not None:
+        _active_window.close()

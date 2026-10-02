@@ -307,7 +307,7 @@
     setRowName(li.querySelector(".job-name"), j.display_name, j.variant_role);
     li.querySelector(".job-meta").textContent = waitingForDevice
       ? ((j.auto_resume && j.error) || `Waiting for ${j.target_device_label} to reconnect — resumes automatically`)
-      : `${j.target_device_label} · ${j.target_storage} · attempt ${j.attempt_count} · created ${j.created_at}`;
+      : `${j.bytes_total > 0 ? formatBytes(j.bytes_total) + " · " : ""}${j.target_device_label} · ${j.target_storage} · attempt ${j.attempt_count} · created ${j.created_at}`;
     li.querySelector(".status-pill").textContent = statusLabel(j);
     if (progressTextHtml) {
       li.querySelector(".job-progress-text").textContent =
@@ -443,6 +443,12 @@
           name.className = "job-name";
           setRowName(name, item.name, item.role);
           main.appendChild(name);
+          if (item.size > 0) {
+            const meta = document.createElement("div");
+            meta.className = "job-meta";
+            meta.textContent = formatBytes(item.size);
+            main.appendChild(meta);
+          }
           if (item.error || neverStarted) {
             const error = document.createElement("div");
             error.className = "job-error";

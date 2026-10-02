@@ -238,10 +238,11 @@ class PreparationQueue:
                 # (the Library page's own .stem-based, extension-dropping
                 # convention), so a queued item's name never changes the
                 # moment it's confirmed into a job.
-                name = queue_worker.resolve_library_item_display_name(conn, row) if row else 'Missing library file'
+                name = queue_worker.queue_item_name(conn, row) if row else 'Missing library file'
                 # No ' — Mod' suffix any more: the row now carries a [Mod]
                 # badge, and saying it twice on one line reads as a bug.
                 items[str(item_id)] = {'name': name, 'phase': 'Waiting', 'order': position,
+                                       'size': (row['size'] or 0) if row else 0,
                                        'job_ids': [], 'role': _library_item_role(row),
                                        'cover_id': cover_id_for_title(row['title_id']) if row else None}
         with self.lock:

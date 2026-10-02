@@ -14,6 +14,10 @@
 </head>
 <body>
 <header class="topbar">
+  {#- A newer SwitchAgent on GitHub: one click downloads and installs it
+      (app_update.js). Hidden until /api/app-update says there is one; while
+      shown, it takes the title's place. -#}
+  <button type="button" id="app-update" class="app-update" hidden></button>
   <div class="topbar-title">SwitchAgent <span class="build-version" title="{{ build_description }}">v{{ app_version }}{% if build_label %}<span class="build-label"> · {{ build_label }}</span>{% endif %}</span></div>
   <div id="storage-bar" class="storage-bar" hidden>
     <div class="storage-bar-track">
@@ -85,6 +89,7 @@
 
 <script src="{{ static_url('app.js') }}"></script>
 <script src="{{ static_url('addon_install.js') }}"></script>
+<script src="{{ static_url('app_update.js') }}"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

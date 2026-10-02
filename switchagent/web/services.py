@@ -88,22 +88,7 @@ def _mod_name_for_row(row) -> Optional[str]:
     without ever changing what is DISPLAYED (that stays the borrowed family
     name, unchanged). Returns None when nothing meaningful is left (e.g. a
     bare `atmosphere/contents/<ID>` at the filesystem root)."""
-    if row["content_type"] != ContentType.ATMOSPHERE_MOD.value:
-        return None
-    parts = [p for p in Path(row["absolute_path"]).parts if p not in ("\\", "/")]
-    structural = {"atmosphere", "contents"}
-    index = len(parts) - 1
-    while index >= 0:
-        segment = parts[index]
-        if segment.lower() in structural or (row["title_id"] and segment.upper() == row["title_id"].upper()):
-            index -= 1
-            continue
-        break
-    if index < 0:
-        return None
-    candidate = parts[index]
-    # A drive root ("D:\\") or a lone separator is not a name.
-    return candidate if candidate.strip(":\\/ ") else None
+    return queue_worker.mod_own_name(row)
 
 
 def _latest_job_by_library_item(conn) -> dict[int, "object"]:
@@ -1200,6 +1185,8 @@ def _job_view(conn, row) -> dict:
     # badge there).
     display_name = queue_worker.display_name_for_job(
         conn, row, mod_suffix=variant_role not in ("mod", "sd", "amiibo", "emuiibo", "addon"))
+    if variant_role == "mod" and item is not None:
+        display_name = queue_worker.mod_own_name(item) or display_name
     stall_seconds = _stall_seconds(row)
     return {
         # Queue badge: what this job installs (see _job_variant_role).

@@ -1,10 +1,9 @@
-"""W3-008: update AVAILABILITY notification only.
+"""W3-008: update AVAILABILITY check only.
 
-Explicitly NOT an auto-updater: this module never downloads an
-executable, never runs anything it fetches, and never replaces any file
-on disk except its own tiny JSON cache (last_check_at/latest_version/
-release_url). The only action a user can take from this is opening the
-release page in their own browser.
+This module never downloads an executable, never runs anything it
+fetches, and never replaces any file on disk except its own tiny JSON
+cache (last_check_at/latest_version/release_url). Installing an update
+is app_update.py's job, and only on the user's click in the top banner.
 
 Privacy: the only outbound request this module ever makes is a bare
 `GET` against GitHub's public Releases API -- no request body, no query

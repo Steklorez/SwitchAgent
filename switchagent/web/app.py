@@ -752,6 +752,21 @@ def create_app(ctx: WebContext) -> FastAPI:
     def api_force_update_check():
         return services.get_update_check_status(force=True)
 
+    # The top banner's "Update": download and install SwitchAgent itself
+    # (switchagent/app_update.py). GET is the banner's poll while it runs.
+    @app.get("/api/app-update")
+    def api_app_update_status(ctx: WebContext = Depends(get_ctx)):
+        return {**services.get_update_check_status(force=False), **ctx.app_updater.status()}
+
+    @app.post("/api/app-update")
+    def api_app_update_start(ctx: WebContext = Depends(get_ctx)):
+        from .. import github_release
+
+        try:
+            return ctx.app_updater.start()
+        except github_release.DownloadError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+
     # -- JSON API: library folder (W3-002) -------------------------------
 
     @app.post("/api/preferences/beta")

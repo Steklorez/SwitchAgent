@@ -97,6 +97,15 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent
+; An update started from SwitchAgent's own banner (switchagent/app_update.py)
+; runs this installer with /SILENT /RELAUNCH=1: start the new version again.
+Filename: "{app}\{#MyAppExeName}"; Flags: nowait; Check: IsRelaunch
+
+[Code]
+function IsRelaunch: Boolean;
+begin
+  Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
+end;
 
 ; ---------------------------------------------------------------------------
 ; IMPORTANT -- persistent user data survives install/upgrade/uninstall.

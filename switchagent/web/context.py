@@ -119,6 +119,12 @@ class WebContext:
         # app does; tests never do). See web/addons_service.ReleaseChecker.
         from .addons_service import ReleaseChecker
         self.addon_releases = ReleaseChecker(Path(db_path).parent / "addon_releases.json")
+        # SwitchAgent's own update, from the top banner (see app_update.py).
+        # request_exit is set by desktop.py; without it (tests) nothing exits.
+        from .. import __version__, app_update
+        self.app_updater = app_update.AppUpdater(
+            app_data_root=config.APP_DATA_ROOT, current_version=__version__,
+            is_busy=self._is_sending)
         self.registry = registry
         self._discover_devices = discover_devices
         self.worker_poll_interval_seconds = worker_poll_interval_seconds
@@ -507,6 +513,12 @@ class WebContext:
             return list(self._device_cache)
 
     # -- background worker ------------------------------------------------
+
+    def _is_sending(self) -> bool:
+        """A job is copying to a console right now -- an app update waits
+        for it rather than cutting it off."""
+        with db.open_db(self.db_path) as conn:
+            return conn.execute("SELECT 1 FROM jobs WHERE status='RUNNING' LIMIT 1").fetchone() is not None
 
     def start_worker(self) -> None:
         if self._worker_thread is not None:

@@ -604,6 +604,35 @@ def resolve_library_item_display_name(
     return Path(source["absolute_path"]).name if source is not None else raw_name
 
 
+def mod_own_name(row) -> Optional[str]:
+    """A mod folder's own distribution name ("Russian Language Text Mod
+    (1.05.2020)"): the first path segment above `atmosphere/contents/<ID>`.
+    None when there is none (a bare tree at a drive root)."""
+    if row["content_type"] != ContentType.ATMOSPHERE_MOD.value:
+        return None
+    parts = [p for p in Path(row["absolute_path"]).parts if p not in ("\\", "/")]
+    structural = {"atmosphere", "contents"}
+    index = len(parts) - 1
+    while index >= 0:
+        segment = parts[index]
+        if segment.lower() in structural or (row["title_id"] and segment.upper() == row["title_id"].upper()):
+            index -= 1
+            continue
+        break
+    if index < 0:
+        return None
+    candidate = parts[index]
+    # A drive root ("D:\\") or a lone separator is not a name.
+    return candidate if candidate.strip(":\\/ ") else None
+
+
+def queue_item_name(conn: sqlite3.Connection, row: sqlite3.Row) -> str:
+    """Queue's label for one library item. A mod reads as itself, not as
+    its game: with the game's filename borrowed, two mods and the game read
+    as three copies of "... (5.04 GB).nsz" in one run."""
+    return mod_own_name(row) or resolve_library_item_display_name(conn, row)
+
+
 def display_name_for_job(
     conn: sqlite3.Connection, job_row: sqlite3.Row, *, library_items: Optional[list] = None,
     mod_suffix: bool = True,

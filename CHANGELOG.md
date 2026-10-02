@@ -7,6 +7,11 @@ Entries are one sentence per change, three to five lines per release, and
 only what a user would notice — no internals, no reasoning, no history.
 Those belong in the commit message. See [CLAUDE.md](CLAUDE.md#how-to-write-an-entry).
 
+## v1.0.25
+
+- When a new version is out, the top bar says so, and one click downloads and installs it: the installer for an installed copy, the portable build for a portable one.
+- Queue names each mod after its own folder and shows every item's real size.
+
 ## v1.0.24
 
 - Homebrew ports get a cover too: the icon inside the port itself, or the game's Steam art when the name matches.

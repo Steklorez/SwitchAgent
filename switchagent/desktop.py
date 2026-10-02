@@ -181,6 +181,16 @@ def _run_primary_instance(args: argparse.Namespace) -> int:
         single_instance.clear_runtime_info(_runtime_info_path())
         log.info("shutdown complete")
 
+    def _exit_for_update() -> None:
+        # Ends the tray loop (or, without a tray, the server thread the
+        # fallback loop waits on); _shutdown() below then runs as usual.
+        from . import tray
+
+        server.should_exit = True
+        tray.close_active()
+
+    ctx.app_updater.request_exit = _exit_for_update
+
     if not _wait_until_ready(server):
         log.error("HTTP server did not become ready within %.0fs -- aborting startup", READY_TIMEOUT_SECONDS)
         _shutdown()

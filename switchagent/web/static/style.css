@@ -1045,3 +1045,34 @@ a { color: var(--accent); text-decoration: none; }
   box-shadow: inset 0 0 0 1px #ffffff17;
 }
 .game-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* -- The update strip in the top bar (app_update.js) ------------------------
+   Orange neon: a slow sheen drifts across it and the glow breathes, both
+   over several seconds, so it is noticed without nagging. */
+.app-update {
+  margin-right: auto; padding: 5px 14px;
+  border: 1px solid rgba(255, 150, 40, .85); border-radius: 999px;
+  color: #fff4e6; font: inherit; font-size: .82rem; font-weight: 600; letter-spacing: .01em;
+  cursor: pointer; white-space: nowrap;
+  background: linear-gradient(100deg, #b4500a 0%, #ff8a1f 30%, #ffc067 50%, #ff8a1f 70%, #b4500a 100%);
+  background-size: 300% 100%;
+  text-shadow: 0 0 6px rgba(255, 170, 70, .8);
+  box-shadow: 0 0 8px rgba(255, 140, 30, .55), 0 0 22px rgba(255, 120, 20, .25), inset 0 0 6px rgba(255, 210, 150, .35);
+  animation: app-update-sheen 9s ease-in-out infinite, app-update-glow 4.5s ease-in-out infinite;
+}
+.app-update:not([hidden]) + .topbar-title { display: none; }
+.app-update:hover { filter: brightness(1.08); }
+.app-update:disabled { cursor: default; }
+.app-update.is-progress {
+  background: linear-gradient(90deg, #ff8a1f 0%, #ffb24d var(--progress, 0%), #3a1c08 var(--progress, 0%), #3a1c08 100%);
+  animation: app-update-glow 4.5s ease-in-out infinite;
+  transition: background .4s linear;
+}
+.app-update.is-failed { background: #6b2a10; animation: none; }
+@keyframes app-update-sheen { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes app-update-glow {
+  0%, 100% { box-shadow: 0 0 6px rgba(255, 140, 30, .45), 0 0 16px rgba(255, 120, 20, .18), inset 0 0 6px rgba(255, 210, 150, .3); }
+  50%      { box-shadow: 0 0 12px rgba(255, 150, 40, .8), 0 0 30px rgba(255, 120, 20, .38), inset 0 0 8px rgba(255, 210, 150, .45); }
+}
+:root[data-motion="off"] .app-update { animation: none; }
+@media (prefers-reduced-motion: reduce) { :root:not([data-motion="on"]) .app-update { animation: none; } }
