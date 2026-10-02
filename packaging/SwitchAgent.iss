@@ -101,12 +101,6 @@ Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: no
 ; runs this installer with /SILENT /RELAUNCH=1: start the new version again.
 Filename: "{app}\{#MyAppExeName}"; Flags: nowait; Check: IsRelaunch
 
-[Code]
-function IsRelaunch: Boolean;
-begin
-  Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
-end;
-
 ; ---------------------------------------------------------------------------
 ; IMPORTANT -- persistent user data survives install/upgrade/uninstall.
 ;
@@ -121,3 +115,10 @@ end;
 ; uninstalling only removes {app}. The user's DB/config/job history are
 ; never touched by either operation.
 ; ---------------------------------------------------------------------------
+
+; Last in the file: everything after [Code] is read as Pascal.
+[Code]
+function IsRelaunch: Boolean;
+begin
+  Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
+end;
