@@ -14,6 +14,7 @@ LINKS = [
     ("Source code", REPO_URL, "GitHub repository"),
     ("Releases", RELEASES_URL, "download a new version, see what changed"),
     ("Report a bug or ask a question", ISSUE_URL, "GitHub Issues"),
+    *([("Telegram group", TELEGRAM_CHAT_URL, "questions, ideas, help")] if TELEGRAM_CHAT_URL else []),
     ("Support the author on Ko-fi", "https://ko-fi.com/I3I0273OYI", "optional, appreciated"),
     ("Support the author on Boosty", "https://boosty.to/steklorez", "optional, appreciated"),
 ]
