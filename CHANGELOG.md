@@ -7,6 +7,12 @@ Entries are one sentence per change, three to five lines per release, and
 only what a user would notice — no internals, no reasoning, no history.
 Those belong in the commit message. See [CLAUDE.md](CLAUDE.md#how-to-write-an-entry).
 
+## v1.0.26
+
+- RAR archives install with nothing extra to download: 7-Zip now comes with SwitchAgent.
+- A library scan is hard to miss: a spinner next to Library and a banner saying the list may still be incomplete.
+- Settings can make SwitchAgent start with Windows, quietly in the tray.
+
 ## v1.0.25
 
 - When a new version is out, the top bar says so, and one click downloads and installs it: the installer for an installed copy, the portable build for a portable one.

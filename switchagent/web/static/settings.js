@@ -392,4 +392,43 @@
       }
     });
   }
+
+  // -- Start with Windows (autostart.py; the registry is the setting) ------
+  const autostartSection = document.getElementById("autostart");
+  const autostartToggle = document.getElementById("autostart-toggle");
+  const autostartHint = document.getElementById("autostart-hint");
+
+  function renderAutostart(s) {
+    if (!s.available) return;  // a dev run has no exe to register
+    autostartSection.hidden = false;
+    autostartToggle.checked = s.enabled;
+    autostartHint.textContent = s.other_copy
+      ? `Windows currently starts another copy: ${s.other_copy}. Turning this on starts this one instead.`
+      : "";
+  }
+
+  if (autostartSection) {
+    fetch("/api/autostart").then((r) => r.json()).then(renderAutostart).catch(() => {});
+    autostartToggle.addEventListener("change", async () => {
+      autostartToggle.disabled = true;
+      try {
+        const res = await fetch("/api/autostart", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled: autostartToggle.checked }),
+        });
+        const body = await res.json();
+        if (!res.ok) {
+          autostartToggle.checked = !autostartToggle.checked;
+          autostartHint.textContent = "Could not change it: " + (body.detail || res.status);
+          return;
+        }
+        renderAutostart(body);
+      } catch (e) {
+        autostartToggle.checked = !autostartToggle.checked;
+        autostartHint.textContent = "Request failed: " + e;
+      } finally {
+        autostartToggle.disabled = false;
+      }
+    });
+  }
 })();

@@ -69,6 +69,16 @@ CREATE TABLE IF NOT EXISTS job_log (
     message TEXT NOT NULL
 );
 
+-- What work/job-<id>/ held for a finished job (manifest.json + progress.json),
+-- compressed, once the folder itself is no longer worth keeping on disk
+-- (work_cleanup.archive_finished_jobs).
+CREATE TABLE IF NOT EXISTS job_archive (
+    job_id      INTEGER PRIMARY KEY REFERENCES jobs(id),
+    archived_at TEXT NOT NULL,
+    manifest    BLOB,
+    progress    BLOB
+);
+
 -- Web UI (see docs/WEB-UI.md). Deliberately separate from inbox_items,
 -- not a rename/reuse of it: inbox_items indexes inbox/ (Stage 2's
 -- drop-a-file workflow), library_items indexes an arbitrary configured

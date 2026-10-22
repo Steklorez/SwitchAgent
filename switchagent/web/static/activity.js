@@ -189,7 +189,31 @@
 
   function renderSummary(active, data) {
     panel.dataset.state = active ? "busy" : "idle";
-    summaryText.textContent = active ? "Loading…" : "Everything is loaded";
+    const scan = data.scan;
+    const navLibrary = document.querySelector('.main-nav a[href="/"]');
+    if (navLibrary) navLibrary.classList.toggle("is-scanning", !!active);
+    if (scan.running) {
+      // Say plainly that the list below may be incomplete, not just "Loading".
+      const checked = scan.phase === "indexing" && scan.total
+        ? ` ${number.format(scan.done)} of ${number.format(scan.total)} files checked.` : "";
+      summaryText.textContent = `Scanning your library…${checked} Games may still be missing.`;
+    } else if (active) {
+      summaryText.textContent = "Loading…";
+    } else if (Date.now() < scanResultUntil) {
+      summaryText.textContent = scan.cancelled
+        ? "Scan stopped — the list may be incomplete"
+        : "Scan finished — your library is up to date";
+    } else {
+      summaryText.textContent = "Everything is loaded";
+    }
+    // A library that is empty only because the scan has not got there yet
+    // must not read as "you have no games".
+    document.querySelectorAll(".empty-state[data-scan-aware]").forEach((el) => {
+      if (!el.dataset.idleText) el.dataset.idleText = el.textContent.trim();
+      el.textContent = scan.running
+        ? "Scanning your library… your games will appear here as soon as the scan finishes."
+        : el.dataset.idleText;
+    });
 
     const facts = [];
     const cards = document.querySelectorAll(".library-tiles > .game-group, .library-tiles > .card").length;
@@ -214,7 +238,6 @@
 
     if (!topline) return;
     topline.hidden = !active;
-    const scan = data.scan;
     const determinate = scan.running && scan.phase === "indexing" && scan.total;
     topline.classList.toggle("is-indeterminate", !determinate);
     toplineFill.style.width = determinate ? `${(scan.done / scan.total * 100).toFixed(1)}%` : "";

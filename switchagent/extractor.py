@@ -686,6 +686,24 @@ def _first_listing_mismatch(entries: list[ArchiveEntry], dest_root: Path) -> Opt
     return None
 
 
+def _bundled_7zip() -> Path | None:
+    """The 7z.exe shipped with the app (packaging/vendor/7zip), if present."""
+    from . import paths
+
+    root = paths.resource_root()
+    exe = (root / "vendor" / "7zip" if paths.is_frozen() else root / "packaging" / "vendor" / "7zip") / "7z.exe"
+    return exe if exe.is_file() else None
+
+
+def _use_bundled_7zip() -> None:
+    """Point rarfile at the bundled 7z.exe, so .rar needs no installed tool."""
+    import rarfile
+
+    exe = _bundled_7zip()
+    if exe is not None:
+        rarfile.SEVENZIP_TOOL = str(exe)
+
+
 def rar_backend_available() -> bool:
     """Whether an external unrar/7z/bsdtar tool usable by `rarfile` for
     real decompression is currently on PATH -- used by the Web UI's
@@ -694,6 +712,7 @@ def rar_backend_available() -> bool:
     .rar. Does not raise; a probe failure just means "not available"."""
     import rarfile
 
+    _use_bundled_7zip()
     try:
         rarfile.tool_setup()
     except rarfile.Error:
@@ -704,6 +723,7 @@ def rar_backend_available() -> bool:
 def _extract_rar(archive_path: Path, dest_root: Path) -> None:
     import rarfile
 
+    _use_bundled_7zip()
     try:
         with rarfile.RarFile(archive_path) as rf:
             rf.extractall(path=dest_root)

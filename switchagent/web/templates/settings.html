@@ -183,6 +183,19 @@
 </section>
 
 
+{#- Filled by settings.js from /api/autostart: the registry is the truth. -#}
+<section class="settings-section" id="autostart" hidden>
+  <h3><span aria-hidden="true">🚀</span> Start with Windows</h3>
+  <label class="beta-toggle">
+    <span class="switch switch-beta">
+      <input type="checkbox" id="autostart-toggle">
+      <span class="switch-slider"></span>
+    </span>
+    <span><strong>Start SwitchAgent when you sign in to Windows</strong> — it waits in the tray, without opening a browser tab.</span>
+  </label>
+  <p class="settings-hint" id="autostart-hint"></p>
+</section>
+
 <section class="settings-section">
   <h3>Devices</h3>
   <p>{{ devices|length }} known device(s) — see the <a href="/devices">Devices</a> page to rename.</p>

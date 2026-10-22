@@ -116,36 +116,27 @@ number in a file").
 
 ## RAR extraction
 
-`rarfile` (already a dependency) only *parses RAR headers* in pure
-Python -- listing and classification of `.rar` archives always works.
-Actually decompressing one needs an external `unrar`, `7z`, or `bsdtar`
-executable on `PATH`, which this project does **not** bundle.
+`rarfile` (already a dependency) parses RAR headers in pure Python, but
+decompressing needs an external tool. The build therefore ships 7-Zip's
+`7z.exe` + `7z.dll` (and its `License.txt`) under `vendor/7zip/` in the
+bundle (source: `packaging/vendor/7zip/`, added in `SwitchAgent.spec`).
+`extractor._use_bundled_7zip()` points `rarfile.SEVENZIP_TOOL` at it, so
+`.rar` works with nothing installed on the machine.
 
-This was a deliberate choice, not an oversight: bundling `unrar.exe`
-(RARLAB's freeware, redistribution terms are murky for third-party
-bundling) or 7-Zip's RAR-capable `7z.exe`/`7z.dll` (LGPL + an additional
-RARLAB-derived restriction on the RAR decoder specifically) without
-having actually cleared the exact redistribution terms would risk
-shipping something without a clean right to redistribute it -- the task
-this was built against explicitly called that out as unacceptable.
+Redistribution: 7-Zip is LGPL; `7z.dll` also carries the "unRAR license
+restriction" (the RAR decoder may not be used to re-create the RAR
+compression algorithm -- SwitchAgent only decompresses). Binary
+redistribution must reproduce 7-Zip's license text, which is why
+`License.txt` travels next to the binaries. See `THIRD_PARTY_NOTICES.md`.
 
-Instead, the packaged build:
-- Never crashes on a `.rar` it can't decompress -- extraction raises the
-  existing, typed `extractor.ExtractionBackendMissingError`
-  (`switchagent/extractor.py`, pre-existing), now also caught explicitly
-  in `web/services.create_and_confirm_jobs()` and reported as a clear
-  per-item error instead of an unhandled 500.
-- Reports availability honestly: `extractor.rar_backend_available()`
-  (checks `rarfile.tool_setup()`) is surfaced on the Settings page, so a
-  user with 7-Zip or WinRAR already on `PATH` sees RAR support just work,
-  and a user without one sees exactly why it doesn't, instead of
-  discovering it only when a job fails.
-- Never claims RAR support "out of the box" in the installer or docs.
+In a source checkout the same files are used from `packaging/vendor/7zip/`.
+If they are missing, `rarfile` falls back to `unrar`/`7z`/`bsdtar` on
+`PATH`; if none exists, extraction raises
+`extractor.ExtractionBackendMissingError`, reported as a per-item error,
+and `extractor.rar_backend_available()` (shown on Settings) says so.
 
-If a future maintainer wants full bundled RAR support, review 7-Zip's or
-libarchive's exact redistribution terms first, add the binary under
-`packaging/`, and update `THIRD_PARTY_NOTICES.md` accordingly -- that is
-intentionally left as a follow-up, not done here.
+To update 7-Zip: replace the three files in `packaging/vendor/7zip/` with
+those of a newer 7-Zip install.
 
 ## Packaged smoke test (`packaging/smoke_test.py`)
 

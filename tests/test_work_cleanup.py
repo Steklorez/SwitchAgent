@@ -283,3 +283,55 @@ def test_two_threads_releasing_the_same_batch_never_see_it_half_removed(isolated
     assert not batch_dir.exists()
     thread.join(5)
     assert outcome["worker"] is True
+
+
+# ---------------------------------------------------------------------------
+# archive_finished_jobs: job-<id> folders folded into the job_archive table
+# ---------------------------------------------------------------------------
+
+def test_archive_folds_old_finished_job_into_db(isolated_db):
+    import zlib
+
+    conn, _inbox_dir = isolated_db
+    job_id = _make_job(conn, status="DONE", finished_at=_iso(_OLD))
+    work_dir = manifest_mod.job_work_dir(job_id)
+    work_dir.mkdir(parents=True, exist_ok=True)
+    (work_dir / "manifest.json").write_text('{"a": 1}', encoding="utf-8")
+    (work_dir / "progress.json").write_text('{"delivered": ["x"]}', encoding="utf-8")
+
+    assert work_cleanup.archive_finished_jobs(conn) == 1
+    assert not work_dir.exists()
+    row = conn.execute("SELECT * FROM job_archive WHERE job_id=?", (job_id,)).fetchone()
+    assert zlib.decompress(row["manifest"]) == b'{"a": 1}'
+    assert zlib.decompress(row["progress"]) == b'{"delivered": ["x"]}'
+    assert work_cleanup.archive_finished_jobs(conn) == 0  # idempotent
+
+
+def test_archive_leaves_fresh_active_failed_and_payload_folders(isolated_db):
+    conn, _inbox_dir = isolated_db
+    cases = {
+        "fresh": _make_job(conn, status="DONE", finished_at=_iso(_FRESH)),
+        "running": _make_job(conn, status="RUNNING"),
+        "failed": _make_job(conn, status="FAILED", finished_at=_iso(_OLD)),
+        "payload": _make_job(conn, status="DONE", finished_at=_iso(_OLD)),
+    }
+    for job_id in cases.values():
+        _write_bare_metadata_only(job_id)
+    (manifest_mod.job_work_dir(cases["payload"]) / "Game.nsp").write_bytes(b"x")
+    assert work_cleanup.archive_finished_jobs(conn) == 0
+    for job_id in cases.values():
+        assert manifest_mod.job_work_dir(job_id).is_dir()
+    assert conn.execute("SELECT COUNT(*) FROM job_archive").fetchone()[0] == 0
+
+
+def test_archive_folds_abandoned_failed_job_but_not_live_failed_one(isolated_db):
+    conn, _inbox_dir = isolated_db
+    dead = _make_job(conn, status="FAILED", finished_at=_iso(_OLD))
+    live = _make_job(conn, status="FAILED", finished_at=_iso(_OLD))
+    conn.execute("UPDATE jobs SET abandoned=1 WHERE id=?", (dead,))
+    conn.commit()
+    for job_id in (dead, live):
+        _write_bare_metadata_only(job_id)
+    assert work_cleanup.archive_finished_jobs(conn) == 1
+    assert not manifest_mod.job_work_dir(dead).exists()
+    assert manifest_mod.job_work_dir(live).is_dir()

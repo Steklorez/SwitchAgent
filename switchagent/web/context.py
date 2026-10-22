@@ -634,6 +634,14 @@ class WebContext:
             log.info("worker startup: abandoned %d unconfirmed job(s) -> FAILED", abandoned)
             for row in unconfirmed:
                 cleanup_batch_if_all_done(conn, row["batch_id"])
+        from ..work_cleanup import archive_finished_jobs
+
+        try:
+            folded = archive_finished_jobs(conn)
+            if folded:
+                log.info("worker startup: folded %d finished job folder(s) into job_archive", folded)
+        except Exception:  # noqa: BLE001 -- housekeeping must never stop the worker
+            log.exception("worker startup: archiving finished job folders failed")
         try:
             while not self._stop_event.is_set():
                 if self._worker_restart_requested.is_set():

@@ -188,13 +188,32 @@ body {
   font-size: .8rem; line-height: 1.2;
   transition: border-color .4s ease, box-shadow .4s ease;
 }
-.activity[data-state="busy"] { border-color: #1ee0f22e; box-shadow: 0 0 18px #1ee0f212; }
+.activity[data-state="busy"] { border-color: #1ee0f24d; box-shadow: 0 0 22px #1ee0f21f; position: relative; overflow: hidden; }
+/* A light sweeps across the whole strip while the library is being updated. */
+.activity[data-state="busy"]::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: -35%; width: 35%; pointer-events: none;
+  background: linear-gradient(100deg, transparent, #1ee0f21c 45%, #8db8ff26 55%, transparent);
+  animation: activity-shimmer 2.2s ease-in-out infinite;
+}
+/* The dot becomes a glowing orbital ring: comet arc spinning around a pulsing core. */
+.activity[data-state="busy"] .activity-dot {
+  width: 22px; height: 22px; background: radial-gradient(circle, var(--activity-cyan) 0 3px, transparent 4px);
+  box-shadow: none; animation: activity-core 1.4s ease-in-out infinite; position: relative;
+}
+.activity[data-state="busy"] .activity-dot::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 40%, #4f8ef7 70%, var(--activity-cyan) 100%);
+  -webkit-mask: radial-gradient(circle, transparent 0 7px, #000 8px 10px, transparent 11px);
+  mask: radial-gradient(circle, transparent 0 7px, #000 8px 10px, transparent 11px);
+  filter: drop-shadow(0 0 4px #1ee0f2aa); animation: activity-spin .9s linear infinite;
+}
 .activity[data-state="error"] { border-color: #e5484d55; }
 .activity-summary-text { font-weight: 650; color: var(--text); white-space: nowrap; }
 .activity-summary-facts { flex: 1 1 0; color: var(--text-dim); font-variant-numeric: tabular-nums; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .activity[data-state="busy"] .activity-summary-facts { display: none; }
+.activity[data-state="busy"] .activity-summary-text { white-space: normal; color: var(--activity-cyan); font-size: .9rem; }
+.activity[data-state="busy"] { padding-top: 8px; padding-bottom: 8px; }
 .activity-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--text-dim); }
-.activity[data-state="busy"] .activity-dot { background: var(--activity-cyan); animation: activity-pulse 1.6s ease-out infinite; }
 .activity[data-state="idle"] .activity-dot { background: var(--ok); box-shadow: 0 0 8px #35c46f88; }
 .activity[data-state="error"] .activity-dot { background: var(--danger); }
 
@@ -247,6 +266,8 @@ body {
 .activity-topline.is-indeterminate span { width: 30%; transition: none; animation: activity-sweep 1.4s cubic-bezier(.45,.05,.55,.95) infinite; }
 
 @keyframes activity-sweep { from { left: -40%; } to { left: 100%; } }
+@keyframes activity-shimmer { from { left: -35%; } to { left: 100%; } }
+@keyframes activity-core { 0%, 100% { transform: scale(.85); } 50% { transform: scale(1.08); } }
 @keyframes activity-spin { to { transform: rotate(360deg); } }
 @keyframes activity-pulse { 0% { box-shadow: 0 0 0 0 #1ee0f288; } 70% { box-shadow: 0 0 0 7px #1ee0f200; } 100% { box-shadow: 0 0 0 0 #1ee0f200; } }
 @keyframes activity-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
@@ -260,4 +281,15 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .activity-bar.is-indeterminate .activity-bar-fill, .activity-topline.is-indeterminate span { animation: none; left: 0; width: 100%; opacity: .5; }
   .activity-row .activity-icon, .activity[data-state="busy"] .activity-dot, .activity-row.is-new { animation: none; }
+}
+
+/* Library tab in the side menu: a small ring spins next to it during a scan. */
+.main-nav a.is-scanning .nav-label::after {
+  content: ""; display: inline-block; width: 12px; height: 12px; margin-left: 9px; vertical-align: -1px; border-radius: 50%;
+  border: 2px solid #1ee0f233; border-top-color: var(--activity-cyan); animation: activity-spin .8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* The sweep and the pulse go; the spinners stay (slower) -- they are the one signal that work is going on. */
+  .activity[data-state="busy"]::after, .activity[data-state="busy"] .activity-dot { animation: none; }
+  .activity[data-state="busy"] .activity-dot::before, .main-nav a.is-scanning .nav-label::after { animation-duration: 2.2s; }
 }

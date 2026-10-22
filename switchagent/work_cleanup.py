@@ -31,6 +31,7 @@ from __future__ import annotations
 import shutil
 import sqlite3
 import threading
+import zlib
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -186,3 +187,45 @@ def execute_cleanup(conn: sqlite3.Connection, *, retention_days: float = DEFAULT
         freed_bytes += job.size_bytes
         cleaned_job_ids.append(job.job_id)
     return {"cleaned_job_count": len(cleaned_job_ids), "cleaned_job_ids": cleaned_job_ids, "freed_bytes": freed_bytes}
+
+
+def archive_finished_jobs(conn: sqlite3.Connection, *, retention_days: float = DEFAULT_RETENTION_DAYS) -> int:
+    """Folds work/job-<id>/ of finished jobs into one compressed row of the
+    job_archive table and removes the folder, so work/ does not collect a
+    folder per transfer forever. Only DONE/DONE_UNVERIFIED or abandoned jobs past the
+    retention window, and only folders holding nothing but manifest.json/
+    progress.json (a folder still carrying payload waits for
+    execute_cleanup()). Row first, folder second: a failure in between
+    leaves both, never neither. Returns how many folders were folded."""
+    now = datetime.now(timezone.utc)
+    folded = 0
+    for row in db.list_jobs(conn):
+        # Abandoned attempts can never be retried either (retry_job refuses
+        # them), so their folders are as finished as a DONE job's.
+        finished = row["status"] in CLEANUP_ELIGIBLE_STATUSES or row["abandoned"]
+        if not finished:
+            continue
+        if row["finished_at"]:
+            if now - datetime.fromisoformat(row["finished_at"]) < timedelta(days=retention_days):
+                continue
+        elif not row["abandoned"]:
+            continue
+        job_dir = manifest_mod.job_work_dir(row["id"])
+        if (not job_dir.is_dir() or job_dir.is_symlink()
+                or job_dir.resolve().parent != config.WORK_DIR.resolve()):
+            continue
+        entries = list(job_dir.iterdir())
+        if any(e.name not in _KEPT_FILENAMES or not e.is_file() for e in entries):
+            continue
+        try:
+            blobs = {e.name: zlib.compress(e.read_bytes(), 9) for e in entries}
+            conn.execute(
+                "INSERT OR REPLACE INTO job_archive (job_id, archived_at, manifest, progress) VALUES (?, ?, ?, ?)",
+                (row["id"], now.isoformat(timespec="seconds"), blobs.get("manifest.json"), blobs.get("progress.json")),
+            )
+            conn.commit()
+            shutil.rmtree(job_dir)
+        except OSError:
+            continue
+        folded += 1
+    return folded

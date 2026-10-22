@@ -68,11 +68,14 @@ is.
 
 ## RAR extraction
 
-SwitchAgent uses the `rarfile` package (ISC license) for RAR archive
-*listing* only. Actually decompressing a `.rar` archive requires an
-external `unrar`/`7z`/`bsdtar` executable on `PATH` -- SwitchAgent does
-not bundle one; see `docs/PACKAGING.md` for why, and for what that means
-for a packaged release's RAR support.
+SwitchAgent uses the `rarfile` package (ISC license) to read RAR archives
+and bundles **7-Zip** (`7z.exe`, `7z.dll`; Copyright Igor Pavlov,
+https://www.7-zip.org/) to decompress them. 7-Zip is licensed under the
+GNU LGPL; `7z.dll` additionally contains code under the LGPL with the
+"unRAR license restriction" (the RAR decoder may not be used to re-create
+the RAR compression algorithm) and BSD 2/3-clause code. SwitchAgent only
+decompresses. 7-Zip's full license text is shipped as
+`vendor/7zip/License.txt` next to the binaries.
 
 ## Nintendo Switch / game content
 

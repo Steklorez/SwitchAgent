@@ -93,6 +93,11 @@ datas = collect_data_files("switchagent.web", includes=["templates/*", "static/*
 # lookup would silently fall back to the "0.0.0+unknown" placeholder.
 datas += copy_metadata("switchagent")
 
+# 7-Zip's console tool + codec DLL: the only thing that can decompress .rar
+# (rarfile just calls it). Shipped so nothing has to be installed.
+datas += [(str(PROJECT_ROOT / "packaging" / "vendor" / "7zip" / f), "vendor/7zip")
+          for f in ("7z.exe", "7z.dll", "License.txt")]
+
 # Which source this build is: branch, commit, uncommitted changes, when
 # (switchagent/build_info.py). Written under build/, never into the source
 # tree, and shipped next to build_info.py, where it looks for it -- a local

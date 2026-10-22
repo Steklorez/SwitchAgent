@@ -35,7 +35,15 @@ a job was created for.
 - **One library out of several folders** -- point it at the folders you
   download into and it scans, classifies and groups what it finds as
   **Base Game / Update / DLC / Mod**, including content still sitting
-  inside a ZIP/7Z/RAR archive.
+  inside a ZIP/7Z/RAR archive (unpacked with the 7-Zip that ships
+  inside SwitchAgent -- nothing to install).
+- **You can see it working** -- while the library is being scanned, a
+  spinner turns next to *Library* in the menu and a banner says the list
+  may still be incomplete, so a game that has not shown up yet is not
+  mistaken for a missing one.
+- **Starts with Windows, if you want** -- *Settings -> Start with Windows*
+  puts SwitchAgent in your sign-in items; it waits in the tray without
+  opening a browser tab.
 - **A homebrew port is one game** -- the forwarder `.nsp` and its
   `switch/` folder (as `switch.7z` or already unpacked) are one card.
   Installing it sends the forwarder to DBI and copies `switch/` onto the
@@ -164,14 +172,12 @@ over MTP -- check the console's own screen to confirm.
   expected for a small, independently-published app; click *More info* →
   *Run anyway*. See `docs/PACKAGING.md`'s "Code signing" section for why
   a signature doesn't always make this disappear immediately.
-- **RAR files won't install** -- SwitchAgent can list/classify `.rar`
-  archives out of the box, but actually unpacking one needs an external
-  `unrar`, `7z`, or `bsdtar` tool on your `PATH` (e.g. install 7-Zip and
-  add its folder to `PATH` -- its installer does not). Check the
-  **Settings** page -- it tells you plainly whether RAR extraction is
-  currently available. ZIP and 7Z work with no extra tool; a 7Z packed by
-  a recent 7-Zip is unpacked with 7-Zip or with the `tar.exe` that comes
-  with Windows.
+- **RAR files won't install** -- RAR, ZIP and 7Z are unpacked by tools
+  that ship with SwitchAgent (7-Zip is bundled); nothing needs installing.
+  If a `.rar` still fails, the **Settings** page says whether RAR
+  extraction is available; the archive may be damaged, encrypted or
+  multi-volume with a missing part. A 7Z packed by a recent 7-Zip is
+  unpacked by the bundled 7-Zip as well.
 - **Nothing happens when I double-click the EXE a second time** -- that's
   by design: SwitchAgent detected it's already running and just opened
   its existing web UI instead of starting a second copy.

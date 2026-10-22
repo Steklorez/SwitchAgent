@@ -752,6 +752,22 @@ def create_app(ctx: WebContext) -> FastAPI:
     def api_force_update_check():
         return services.get_update_check_status(force=True)
 
+    # Settings -> "Start with Windows" (switchagent/autostart.py).
+    @app.get("/api/autostart")
+    def api_autostart_status():
+        from .. import autostart
+
+        return autostart.status()
+
+    @app.post("/api/autostart")
+    def api_autostart_set(body: dict):
+        from .. import autostart
+
+        try:
+            return autostart.set_enabled(bool(body.get("enabled")))
+        except (RuntimeError, OSError) as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+
     # The top banner's "Update": download and install SwitchAgent itself
     # (switchagent/app_update.py). GET is the banner's poll while it runs.
     @app.get("/api/app-update")

@@ -38,3 +38,6 @@ screenshots/Gemini_Generated_Image_*
 
 # Full-size screen recording; the committed demo is SwitchAgent-demo.gif
 screenshots/SwitchAgent.gif
+
+# Bundled 7-Zip (RAR extraction) -- must be committed so CI can package it.
+!packaging/vendor/7zip/7z.exe
