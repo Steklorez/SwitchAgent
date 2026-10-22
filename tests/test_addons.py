@@ -99,7 +99,7 @@ def test_the_shipped_catalog_keeps_every_rule():
     ids = [a.id for a in catalog]
     assert ids[:10] == ["ultrahand", "emuiibo", "status-monitor", "fpslocker", "saltynx", "reversenx-rt",
                         "fizeau", "quickntp", "jksv", "moonlight"]
-    assert len(ids) == 26 and {"amiigo", "nxthemes", "themezer", "nxmp", "noods", "turnips"} <= set(ids)
+    assert len(ids) == 27 and {"sys-clk", "amiigo", "nxthemes", "themezer", "nxmp", "noods", "turnips"} <= set(ids)
     by_id = {a.id: a for a in catalog}
     assert by_id["emuiibo"].install == "emuiibo" and by_id["emuiibo"].requires == ("ultrahand",)
     assert all(a.spec is not None for a in catalog if a.id != "emuiibo")

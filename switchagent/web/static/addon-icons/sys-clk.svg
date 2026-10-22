@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="sys-clk">
+  <!-- SwitchAgent's own icon for sys-clk: the project ships none of its own. -->
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ef5350"/><stop offset="1" stop-color="#b71c1c"/></linearGradient></defs>
+  <rect width="256" height="256" rx="56" fill="url(#g)"/>
+  <g fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M52 176 a76 76 0 1 1 152 0"/>
+    <path d="M128 176 l36 -52"/>
+    <path d="M64 176 h20 M172 176 h20"/>
+  </g>
+</svg>

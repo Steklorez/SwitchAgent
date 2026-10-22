@@ -856,3 +856,52 @@ addons:
       - Press Install. SwitchAgent takes the `Turnips-….zip` of its latest GitHub release and queues it.
     usage:
       - Close Animal Crossing, start Turnips; the week's prices are shown morning and afternoon.
+
+  - id: sys-clk
+    name: sys-clk
+    tagline: Set CPU, GPU and memory clocks per game — save battery, or run cooler.
+    category: System modules
+    author: RetroNX Team
+    license: Not stated (source on GitHub)
+    source: https://github.com/retronx-team/sys-clk
+    releases: https://github.com/retronx-team/sys-clk/releases/latest
+    install:
+      repo: retronx-team/sys-clk
+      asset: sys-clk-*.zip
+      name: sys-clk
+      places:
+        - atmosphere/contents/00FF0000636C6BFF/
+        - config/sys-clk/
+        - switch/.overlays/sys-clk-overlay.ovl
+        - switch/sys-clk-manager.nro
+      sign:
+        - atmosphere/contents/00FF0000636C6BFF/exefs.nsp
+        - switch/.overlays/sys-clk-overlay.ovl
+      version_from: switch/.overlays/sys-clk-overlay.ovl
+      keep:
+        - config/sys-clk/config.ini
+      kefir: true
+    requires: [ultrahand]
+    about: |
+      Chooses the processor, graphics and memory speed for each game, separately for handheld,
+      docked and charging — a lower profile to make a light game last longer, a higher one for a
+      heavy game, within what the console officially supports.
+
+      This is the original sys-clk. It does not overclock beyond the stock limits: the "OC" builds
+      (sys-clk-OC, Horizon-OC) need a patched loader in the boot chain, which SwitchAgent never
+      writes.
+    how_it_works:
+      - A background module (`atmosphere/contents/00FF0000636C6BFF`) applies the profile when a game starts or the console is docked or undocked.
+      - The overlay (`switch/.overlays/sys-clk-overlay.ovl`) and the manager app (`switch/sys-clk-manager.nro`) change the profile.
+      - Profiles live in `config/sys-clk/config.ini`, which an update never replaces.
+    install_steps:
+      - Press Install. SwitchAgent takes the `sys-clk-….zip` of its latest GitHub release and queues it — with Ultrahand first, if the Switch does not have it.
+      - Restart the Switch — the module loads only when the console starts.
+    usage:
+      - Start the game, open Ultrahand (L + D-pad Down, then R3) and pick sys-clk.
+      - Choose the clocks for this game; they are saved and applied every time it starts.
+      - Or edit profiles from the Homebrew Menu with the sys-clk manager app.
+    tips:
+      - problem: The console crashes or does not start after an update of the firmware.
+        answer: The module is built for specific firmware versions. Turn it off with the Sysmodules overlay, or remove `atmosphere/contents/00FF0000636C6BFF/flags/boot2.flag`.
+      - Its latest release is from October 2024; check that it supports your firmware before relying on it.

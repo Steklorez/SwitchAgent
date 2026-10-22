@@ -35,8 +35,10 @@ Out, and why:
 - DBI: it is the MTP responder SwitchAgent talks through.
 - Tesla Menu, WerWolv's nx-ovlloader and ovl-sysmodules: unmaintained since
   2023; Ultrahand and ppkantorski's forks replaced them (kefir did too).
-- sys-clk (last release 2024), NX-FanControl (2024): not maintained for
-  current firmware.
+- NX-FanControl (2024): not maintained for current firmware.
+- sys-clk-OC / Horizon-OC: need a patched loader (`atmosphere/kips/`) -- boot
+  chain. The original sys-clk (retronx-team, release 2.0.1 "21fix") is in, at
+  the owner's request, on the understanding that its firmware support is not proven.
 - Torrent catalogs: not what SwitchAgent is for.
 
 ## The releases, as they are laid out (2026-09-26)

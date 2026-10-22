@@ -35,7 +35,7 @@ TITLE_ID_DIR_RE = re.compile(rf"^{config.TITLE_ID_RE}$")
 #      (a sysmodule's exefs.nsp) is no longer taken for an installable package
 #   5  Add-ons catalog releases (switchagent/addons.py): Ultrahand's
 #      sdout.zip, SaltyNX, Fizeau, a catalog overlay or app
-CLASSIFICATION_REVISION = 5
+CLASSIFICATION_REVISION = 6
 
 # A library item that is a program for this PC, not something for a Switch
 # (emuiibo's emutool / emuiigen): shown for what it is, never installable,
