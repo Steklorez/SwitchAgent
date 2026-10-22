@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}About — SwitchAgent{% endblock %}
+{% block content %}
+{#- Read-only page: what this is, which version, where to go with a question
+    or a bug. The links live in switchagent/about.py. -#}
+<h2>About</h2>
+
+<section class="settings-section">
+  <h3>SwitchAgent <span class="build-version">v{{ app_version }}{% if build_label %}<span class="build-label"> · {{ build_label }}</span>{% endif %}</span></h3>
+  <p>A local Windows tool that turns a downloads folder into a library and sends games, updates, DLC, mods and homebrew to a Nintendo Switch running DBI in MTP Responder mode.</p>
+  <p>
+    <button type="button" id="about-check-btn" class="btn">Check for updates</button>
+    <a id="about-update-link" class="btn" href="#" hidden target="_blank" rel="noopener noreferrer">View release</a>
+    <span id="about-update-status" class="settings-hint" role="status" aria-live="polite"></span>
+  </p>
+  <p class="settings-hint">{{ about.runtime }} · {{ about.windows }} · MIT license. No Nintendo firmware, keys or game content is included.</p>
+</section>
+
+<section class="settings-section">
+  <h3>Links</h3>
+  <ul class="about-links">
+    {% for link in about.links %}
+    <li><a href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.label }}</a> <span class="settings-hint">— {{ link.hint }}</span></li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="settings-section">
+  <h3>Something went wrong or you have a question?</h3>
+  <ol>
+    <li>Open <a href="/settings">Settings</a>, scroll to <strong>Diagnostics</strong> and press <strong>Copy diagnostics</strong> (and <strong>Copy logs</strong> if it is about an install that failed). Nothing personal is in them: no library contents, no device IDs.</li>
+    <li>Open <a href="{{ about.issue_url }}" target="_blank" rel="noopener noreferrer">a new GitHub issue</a> (a free GitHub account is needed; sign-up takes a minute).</li>
+    <li>Write what you did, what you expected and what happened instead, and paste the diagnostics under it. A screenshot helps.</li>
+  </ol>
+  {% if about.chat_url %}
+  <p>For a quick question, ask in the <a href="{{ about.chat_url }}" target="_blank" rel="noopener noreferrer">Telegram chat</a>.</p>
+  {% endif %}
+  <p class="settings-hint">A security problem? Do not post it publicly — see SECURITY.md in the repository.</p>
+</section>
+<script src="{{ static_url('about.js') }}"></script>
+{% endblock %}

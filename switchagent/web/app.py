@@ -415,6 +415,22 @@ def create_app(ctx: WebContext) -> FastAPI:
             "cleanup": services.get_work_cleanup_preview(conn),
         })
 
+    @app.get("/about", response_class=HTMLResponse)
+    def page_about(request: Request):
+        from .. import about
+        from .. import config as config_mod
+
+        return _TEMPLATES.TemplateResponse(request, "about.html", {
+            "active_page": "about",
+            "about": {
+                "links": [{"label": a, "url": b, "hint": c} for a, b, c in about.LINKS],
+                "issue_url": about.ISSUE_URL, "chat_url": about.TELEGRAM_CHAT_URL,
+                "runtime": {"dev": "Source checkout", "installed": "Installed", "portable": "Portable"}.get(
+                    config_mod.RUNTIME_MODE, config_mod.RUNTIME_MODE),
+                "windows": error_reporting.windows_version_string(),
+            },
+        })
+
     # -- Amiibo (emuiibo) ----------------------------------------------------
 
     @app.get("/amiibo", response_class=HTMLResponse)

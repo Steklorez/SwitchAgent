@@ -3041,3 +3041,13 @@ def test_queue_groups_one_card_per_game_with_a_row_per_package(client, web_ctx):
 def test_queue_page_switches_the_dock_off(client):
     assert 'id="queue-dock" class="queue-dock" aria-label="Queue" hidden data-off' in client.get("/queue").text
     assert "data-off" not in client.get("/history").text
+
+
+def test_about_page_shows_version_and_links(client):
+    from switchagent import __version__, about
+
+    html = client.get("/about").text
+    assert f"v{__version__}" in html
+    assert about.REPO_URL in html and about.ISSUE_URL in html
+    assert about.TELEGRAM_CHAT_URL in html
+    assert 'href="/about"' in client.get("/settings").text

@@ -12,6 +12,7 @@ Those belong in the commit message. See [CLAUDE.md](CLAUDE.md#how-to-write-an-en
 - RAR archives install with nothing extra to download: 7-Zip now comes with SwitchAgent.
 - A library scan is hard to miss: a spinner next to Library and a banner saying the list may still be incomplete.
 - Settings can make SwitchAgent start with Windows, quietly in the tray.
+- A new About page: version, project links, a Check for updates button, and how to report a bug.
 
 ## v1.0.25
 

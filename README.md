@@ -216,6 +216,9 @@ your SwitchAgent version (Settings page, or `switch-agent --version`),
 what happened, the relevant lines from `switchagent.log`, and what kind of
 content was involved.
 
+Questions, ideas or just want to chat? Join the
+[Telegram group](https://t.me/+IRBCrKQ2k-8wOGNi).
+
 Found a security problem? Do not open a public issue -- see
 [SECURITY.md](SECURITY.md).
 
