@@ -447,10 +447,15 @@ def _normalise(name: str) -> str:
 # of the release: never copied, never counted against its places.
 _JUNK_PARTS = ("__macosx",)
 _JUNK_NAMES = (".ds_store", "thumbs.db", "desktop.ini")
+# A readme beside the folders (sys-clk's release has one) is documentation of
+# the archive, not a file of the SD card: never copied.
+_JUNK_ROOT_NAMES = ("readme.md", "readme.txt", "readme")
 
 
 def _is_junk(path: str) -> bool:
     parts = path.lower().split("/")
+    if len(parts) == 1 and parts[0] in _JUNK_ROOT_NAMES:
+        return True
     return any(p in _JUNK_PARTS for p in parts[:-1]) or parts[-1] in _JUNK_NAMES or parts[-1].startswith("._")
 
 

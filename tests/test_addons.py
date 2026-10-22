@@ -176,7 +176,7 @@ def test_real_release_layouts_are_recognised_and_nothing_else():
     assert addons.match_archive(files_of(loader_only)) is None
     # One file outside its places and it is not the release the catalog knows.
     assert addons.match_archive(files_of({**ultrahand_sdout(), "bootloader/hekate_ipl.ini": b"x"})) is None
-    assert addons.match_archive(files_of({**saltynx_zip(), "README.md": b"x"})) is None
+    assert addons.match_archive(files_of({**saltynx_zip(), "payload.bin": b"x"})) is None
 
 
 def test_one_overlay_or_app_is_known_by_the_name_inside_it():
@@ -826,7 +826,7 @@ def test_a_release_laid_out_its_own_way_is_moved_where_the_catalog_says():
     assert addons.match_archive([("noods.nro", 10)]).files == (("noods.nro", "switch/noods/noods.nro", 10),)
     assert addons.match_archive([("out/Turnips.nro", 10)]).files ==         (("out/Turnips.nro", "switch/Turnips/Turnips.nro", 10),)
     # A file its layout does not cover: not that release.
-    assert addons.match_archive([*nxmp.items(), ("README.md", 1)]) is None
+    assert addons.match_archive([*nxmp.items(), ("notes.bin", 1)]) is None
 
 
 def test_what_a_mac_or_explorer_adds_to_an_archive_is_ignored():
@@ -835,6 +835,18 @@ def test_what_a_mac_or_explorer_adds_to_an_archive_is_ignored():
     match = addons.match_archive(files)
     assert match.addon_id == "saltynx"
     assert not any("__MACOSX" in src or src.endswith((".DS_Store", "Thumbs.db")) for src, _d, _s in match.files)
+
+
+def test_a_readme_beside_the_folders_is_not_part_of_the_release():
+    # sys-clk's release: module, overlay, manager, config template -- and a README.md at the root.
+    files = [("atmosphere/contents/00FF0000636C6BFF/exefs.nsp", 10),
+             ("atmosphere/contents/00FF0000636C6BFF/flags/boot2.flag", 0),
+             ("config/sys-clk/config.ini.template", 5), ("README.md", 5372),
+             ("switch/.overlays/sys-clk-overlay.ovl", 10), ("switch/sys-clk-manager.nro", 10)]
+    match = addons.match_archive(files)
+    assert match.addon_id == "sys-clk"
+    assert not any(dest.lower() == "readme.md" for _src, dest, _s in match.files)
+    assert addons.match_archive([*files, ("extra/README.md", 1)]) is None
 
 
 @pytest.mark.parametrize("version,key", [
