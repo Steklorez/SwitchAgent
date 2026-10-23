@@ -655,6 +655,13 @@ def create_app(ctx: WebContext) -> FastAPI:
             "devices": devices,
         }
 
+    @app.get("/api/busy")
+    def api_busy(conn=Depends(get_conn), ctx: WebContext = Depends(get_ctx)):
+        """Which sidebar tabs have work going on behind them (nav_busy.js):
+        memory, plus the queue's own read. Never touches a disk walk or a
+        device."""
+        return services.nav_busy(conn, ctx)
+
     # -- JSON API: queue / jobs (mutations are explicit, separate from reads) --
 
     @app.get("/api/queue")

@@ -33,10 +33,10 @@
 </header>
 
 <nav class="main-nav">
-  <a href="/" class="{{ 'active' if active_page == 'library' }}">
+  <a href="/" class="{{ 'active' if active_page == 'library' }}" data-busy="library">
     <span class="nav-icon">🎮</span><span class="nav-label">Library</span>
   </a>
-  <a href="/queue" class="{{ 'active' if active_page == 'queue' }}">
+  <a href="/queue" class="{{ 'active' if active_page == 'queue' }}" data-busy="queue">
     <span class="nav-icon">⏳</span><span class="nav-label">Queue</span>
   </a>
   <a href="/history" class="{{ 'active' if active_page == 'history' }}">
@@ -48,13 +48,13 @@
   {#- Only once emuiibo is on a console (app._nav_context): until then
       there is nothing on it to manage, and Add-ons is where it comes from. -#}
   {% if amiibo_tab %}
-  <a href="/amiibo" class="{{ 'active' if active_page == 'amiibo' }}">
+  <a href="/amiibo" class="{{ 'active' if active_page == 'amiibo' }}" data-busy="amiibo">
     <span class="nav-icon">⭐</span><span class="nav-label">Amiibo</span>
   </a>
   {% endif %}
   {#- A beta feature (Settings -> Beta features); off by default. -#}
   {% if beta %}
-  <a href="/addons" class="{{ 'active' if active_page == 'addons' }}">
+  <a href="/addons" class="{{ 'active' if active_page == 'addons' }}" data-busy="addons">
     <span class="nav-icon">🧩</span><span class="nav-label">Add-ons</span>
   </a>
   {% endif %}
@@ -91,6 +91,7 @@
 </main>
 
 <script src="{{ static_url('app.js') }}"></script>
+<script src="{{ static_url('nav_busy.js') }}"></script>
 <script src="{{ static_url('addon_install.js') }}"></script>
 <script src="{{ static_url('app_update.js') }}"></script>
 {% block scripts %}{% endblock %}

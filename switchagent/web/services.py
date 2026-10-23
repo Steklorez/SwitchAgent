@@ -1594,6 +1594,24 @@ def queue_dock(conn, prep_items: list, *, paused: bool = False) -> dict:
     return {"games": result, "paused": paused}
 
 
+def nav_busy(conn, ctx) -> dict:
+    """{tab: bool} -- is something still running behind this sidebar tab.
+    Library: a scan, cover downloads, or a console being read (its "On
+    Switch" badges wait for that). Queue: a game installing or being
+    prepared. Amiibo and Add-ons: a console being read (both are filled from
+    that read), or a download of emuiibo / an add-on."""
+    scan = ctx.scan_status_snapshot()
+    reading = any(d["phase"] for d in ctx.device_activity_snapshot())
+    downloading = ctx.emuiibo_downloads.busy()
+    dock = queue_dock(conn, ctx.preparations.dock_items(), paused=ctx.worker_paused.is_set())
+    return {
+        "library": bool(scan.get("running") or ctx.covers.snapshot()["running"] or reading),
+        "queue": any(g["state"] in ("installing", "preparing") for g in dock["games"]),
+        "amiibo": bool(reading or downloading),
+        "addons": bool(reading or downloading or ctx.addon_releases.snapshot()["checking"]),
+    }
+
+
 def _dock_status_label(state: str, part: dict) -> str:
     if state == "installing":
         what = _VARIANT_ROLE_LABEL.get(part["role"])

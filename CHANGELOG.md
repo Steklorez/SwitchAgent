@@ -10,6 +10,7 @@ Those belong in the commit message. See [CLAUDE.md](CLAUDE.md#how-to-write-an-en
 ## v1.0.27
 
 - Add-ons: sys-clk, per-game CPU, GPU and memory clocks, installed with its overlay and manager.
+- Library, Queue, Amiibo and Add-ons show a spinner in the sidebar while the Switch is being read or a scan, install or download is still running.
 
 ## v1.0.26
 

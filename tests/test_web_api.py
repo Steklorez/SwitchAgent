@@ -3051,3 +3051,12 @@ def test_about_page_shows_version_and_links(client):
     assert about.REPO_URL in html and about.ISSUE_URL in html
     assert about.TELEGRAM_CHAT_URL in html
     assert 'href="/about"' in client.get("/settings").text
+
+
+def test_busy_says_which_sidebar_tabs_have_work_behind_them(client):
+    body = client.get("/api/busy").json()
+    assert set(body) == {"library", "queue", "amiibo", "addons"}
+    assert all(isinstance(v, bool) for v in body.values())
+    # nav_busy.js is on every page and the tabs carry the hook it looks for.
+    html = client.get("/queue").text
+    assert "nav_busy.js" in html and 'data-busy="library"' in html and 'data-busy="queue"' in html

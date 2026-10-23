@@ -149,6 +149,12 @@ a { color: var(--accent); text-decoration: none; }
 .nav-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .main-nav a.active { color: var(--accent); }
 .nav-icon { font-size: 1.3rem; }
+/* A tab whose page is still being filled in the background (nav_busy.js). */
+.main-nav a { position: relative; }
+.nav-spin { position: absolute; top: 6px; right: calc(50% - 26px); width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid var(--border); border-top-color: var(--warn); animation: spin 0.8s linear infinite; }
+.nav-spin[hidden] { display: none; }
+@media (min-width: 768px) { .nav-spin { top: 50%; right: 14px; margin-top: -6px; } }
 
 @media (min-width: 768px) {
   body { padding-top: var(--topbar-h); padding-bottom: 0; padding-left: 180px; }
