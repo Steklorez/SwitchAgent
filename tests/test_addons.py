@@ -837,6 +837,12 @@ def test_what_a_mac_or_explorer_adds_to_an_archive_is_ignored():
     assert not any("__MACOSX" in src or src.endswith((".DS_Store", "Thumbs.db")) for src, _d, _s in match.files)
 
 
+def test_sys_clk_is_not_kefirs_to_keep():
+    # kefir ships the overlay and manager but the module only in its OC pack: on kefir the
+    # "overlay without module" state must stay repairable from here.
+    assert not next(a for a in addons.load_catalog() if a.id == "sys-clk").spec.kefir
+
+
 def test_a_readme_beside_the_folders_is_not_part_of_the_release():
     # sys-clk's release: module, overlay, manager, config template -- and a README.md at the root.
     files = [("atmosphere/contents/00FF0000636C6BFF/exefs.nsp", 10),

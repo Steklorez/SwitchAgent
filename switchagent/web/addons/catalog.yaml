@@ -880,7 +880,6 @@ addons:
       version_from: switch/.overlays/sys-clk-overlay.ovl
       keep:
         - config/sys-clk/config.ini
-      kefir: true
     requires: [ultrahand]
     about: |
       Chooses the processor, graphics and memory speed for each game, separately for handheld,
@@ -904,4 +903,8 @@ addons:
     tips:
       - problem: The console crashes or does not start after an update of the firmware.
         answer: The module is built for specific firmware versions. Turn it off with the Sysmodules overlay, or remove `atmosphere/contents/00FF0000636C6BFF/flags/boot2.flag`.
-      - Its latest release is from October 2024; check that it supports your firmware before relying on it.
+      - problem: The overlay says sys-clk is not running.
+        answer: The overlay and the manager can be there without the module — kefir ships those two, and the module only in its optional overclock pack. Install here adds the module; restart the Switch.
+      - A kefir update can take the module off the card again — install it again if the overlay says it is not running.
+      - The module is not in the Sysmodules overlay's list (its release has no toolbox file); to switch it off, delete its `flags/boot2.flag`.
+      - Its release (2.0.1, built for firmware 21) is from October 2024; firmware support after that is not proven.
