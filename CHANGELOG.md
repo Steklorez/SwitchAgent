@@ -11,6 +11,7 @@ Those belong in the commit message. See [CLAUDE.md](CLAUDE.md#how-to-write-an-en
 
 - Add-ons: sys-clk, per-game CPU, GPU and memory clocks, installed with its overlay and manager.
 - Library, Queue, Amiibo and Add-ons show a spinner in the sidebar while the Switch is being read or a scan, install or download is still running.
+- Library files can be deleted from the PC: tick them, press Delete…, and choose the Recycle Bin or permanent removal.
 
 ## v1.0.26
 

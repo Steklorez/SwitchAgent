@@ -58,10 +58,43 @@
   </div>
   {% endif %}
   </div>
+  <button id="delete-selected-btn" class="btn btn-secondary btn-delete" type="button"
+          title="Delete the selected files from this PC">Delete…</button>
   <button id="install-selected-btn" class="btn btn-primary" {{ "disabled" if connected_devices|length != 1 }}>
     Install selected
   </button>
 </div>
+
+{#- Deleting from the PC (library_delete.js, POST /api/library/delete). The
+    list is what the server says it will do -- real paths, sizes, and which
+    files the Recycle Bin cannot take. -#}
+<dialog id="delete-modal" class="modal" aria-labelledby="delete-title">
+  <header class="confirm-header">
+    <h3 id="delete-title">Delete <span id="delete-count"></span> from this PC</h3>
+  </header>
+  <div class="modal-body">
+    <p id="delete-lead" class="delete-lead">These files are removed from your Library folder. The Switch is not touched.</p>
+    <ul id="delete-list" class="delete-list"></ul>
+    <fieldset id="delete-mode" class="delete-mode">
+      <label><input type="radio" name="delete-mode" value="recycle" checked>
+        <span><strong>Move to the Recycle Bin</strong> <em>— you can restore them</em></span></label>
+      <label><input type="radio" name="delete-mode" value="permanent">
+        <span><strong>Delete permanently</strong> <em>— gone for good</em></span></label>
+    </fieldset>
+    <p id="delete-note" class="delete-note" hidden></p>
+    <label id="delete-sure" class="delete-sure" hidden>
+      <input type="checkbox" id="delete-sure-check"> I understand this cannot be undone.
+    </label>
+    <div id="delete-result" class="confirm-result" hidden></div>
+  </div>
+  <footer class="confirm-footer">
+    <p class="confirm-summary"><strong id="delete-total"></strong></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="delete-cancel-btn" type="button">Cancel</button>
+      <button class="btn btn-danger" id="delete-confirm-btn" type="button" disabled>Delete</button>
+    </div>
+  </footer>
+</dialog>
 
 <dialog id="confirm-modal" class="modal" aria-labelledby="confirm-title">
   <header class="confirm-header">

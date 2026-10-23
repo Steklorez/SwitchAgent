@@ -33,6 +33,7 @@ from .schemas import (
     DeviceStorageMappingClearRequest,
     DeviceStorageMappingRequest,
     HistoryVerificationRequest,
+    LibraryDeleteRequest,
     LibraryDirRequest,
     PreferencesRequest,
     RemoveFromQueueRequest,
@@ -663,6 +664,25 @@ def create_app(ctx: WebContext) -> FastAPI:
         return services.nav_busy(conn, ctx)
 
     # -- JSON API: queue / jobs (mutations are explicit, separate from reads) --
+
+    @app.post("/api/library/delete/plan")
+    def api_library_delete_plan(body: LibraryDeleteRequest, conn=Depends(get_conn), ctx: WebContext = Depends(get_ctx)):
+        """What deleting these Library items would do, for the confirmation
+        dialog: each file's real location and size, whether the Recycle Bin
+        can take it, and what forbids deleting it. Changes nothing."""
+        from .. import library_delete
+        entries = library_delete.plan(conn, body.library_item_ids, preparing_item_ids=services.preparing_item_ids(ctx))
+        return {"items": [e.public() for e in entries]}
+
+    @app.post("/api/library/delete")
+    def api_library_delete(body: LibraryDeleteRequest, conn=Depends(get_conn), ctx: WebContext = Depends(get_ctx)):
+        """Deletes Library files from the PC: to the Recycle Bin or for good,
+        as the caller says -- never one in place of the other."""
+        from .. import library_delete
+        if body.mode not in (library_delete.MODE_RECYCLE, library_delete.MODE_PERMANENT):
+            raise HTTPException(status_code=422, detail="mode must be 'recycle' or 'permanent'")
+        return library_delete.delete(conn, body.library_item_ids, body.mode,
+                                     preparing_item_ids=services.preparing_item_ids(ctx))
 
     @app.get("/api/queue")
     def api_list_queue(conn=Depends(get_conn)):

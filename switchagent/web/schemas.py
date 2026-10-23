@@ -11,6 +11,12 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 
+class LibraryDeleteRequest(BaseModel):
+    library_item_ids: list[int] = Field(min_length=1, max_length=2000)
+    # "recycle" (the Recycle Bin) or "permanent" -- always named by the caller.
+    mode: Optional[str] = None
+
+
 class CreateJobsRequest(BaseModel):
     library_item_ids: list[int] = Field(min_length=1)
     target_device_id: str = Field(min_length=1)

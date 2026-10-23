@@ -122,6 +122,28 @@ never a raw enum. The same name Library shows, via the same
 `strip_release_tags` — one object must not read as two different things
 depending on which page you are on.
 
+## Deleting from the Library is the one thing that removes files from the PC
+
+The selection bar's **Delete…** (`library_delete.py`, `static/library_delete.js`,
+`POST /api/library/delete[/plan]`, `tests/test_library_delete.py`). It works
+on whatever is ticked -- the same checkboxes Install uses -- and the dialog
+shows what the server will do, file by file, before anything is touched.
+
+- **Recycle Bin by default, permanent only when named.** The API refuses a
+  request without a `mode`. Windows has no bin for a network share, a USB
+  drive or a path over 259 characters (`can_recycle`); sending those "to the
+  bin" would delete them for good, so in `recycle` mode they are skipped and
+  said so -- never quietly turned into a permanent delete.
+- **Only the Library index's own files, inside a Library folder.** Never the
+  folder itself, never a link or junction, never what a queued or running job
+  (or a preparation in progress) still needs. Checked again at delete time,
+  not trusted from the plan.
+- **The index follows the disk** (`db.drop_library_items`): a row no job ever
+  referenced is deleted, one a job or History entry points at is RETIRED.
+  History itself is untouched -- it stays a journal.
+- Only what the Switch-side rules above say is still true: nothing here ever
+  deletes from a console.
+
 ## A game is its folder: SD files
 
 A homebrew port ships as a small **forwarder** `.nsp` (installed through DBI,

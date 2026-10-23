@@ -1281,18 +1281,26 @@ def delete_library_items_missing_from(conn: sqlite3.Connection, present_absolute
     only those true removals, same contract as before this fix."""
     rows = conn.execute("SELECT id, absolute_path FROM library_items").fetchall()
     stale_ids = [r["id"] for r in rows if r["absolute_path"] not in present_absolute_paths]
-    if not stale_ids:
-        return 0
+    return drop_library_items(conn, stale_ids)
 
-    placeholders = ",".join("?" * len(stale_ids))
+
+def drop_library_items(conn: sqlite3.Connection, item_ids: list[int],
+                       reason: str = "source file no longer found on disk") -> int:
+    """Takes rows out of the Library index because their file is gone: a row
+    no job ever referenced is deleted; one a job or history entry points at
+    is marked RETIRED (see delete_library_items_missing_from for why).
+    Returns how many rows were truly deleted."""
+    if not item_ids:
+        return 0
+    placeholders = ",".join("?" * len(item_ids))
     referenced_ids = {
         row["library_item_id"] for row in conn.execute(
             f"SELECT DISTINCT library_item_id FROM jobs WHERE library_item_id IN ({placeholders})",
-            stale_ids,
+            list(item_ids),
         ).fetchall()
     }
-    deletable_ids = [i for i in stale_ids if i not in referenced_ids]
-    orphaned_but_referenced_ids = [i for i in stale_ids if i in referenced_ids]
+    deletable_ids = [i for i in item_ids if i not in referenced_ids]
+    orphaned_but_referenced_ids = [i for i in item_ids if i in referenced_ids]
 
     if deletable_ids:
         conn.executemany("DELETE FROM library_items WHERE id = ?", [(i,) for i in deletable_ids])
@@ -1302,7 +1310,7 @@ def delete_library_items_missing_from(conn: sqlite3.Connection, present_absolute
             f"UPDATE library_items SET status = '{LIBRARY_ITEM_RETIRED}', error = ?, "
             "last_scanned_at = ? WHERE id = ?",
             [
-                ("source file no longer found on disk (kept: referenced by an existing job/history entry)", ts, i)
+                (f"{reason} (kept: referenced by an existing job/history entry)", ts, i)
                 for i in orphaned_but_referenced_ids
             ],
         )

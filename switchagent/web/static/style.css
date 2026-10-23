@@ -1082,3 +1082,27 @@ a { color: var(--accent); text-decoration: none; }
 }
 :root[data-motion="off"] .app-update { animation: none; }
 @media (prefers-reduced-motion: reduce) { :root:not([data-motion="on"]) .app-update { animation: none; } }
+
+
+/* -- deleting Library files from the PC (library_delete.js) ----------------- */
+
+.btn-delete { margin-left: auto; }
+#delete-modal { width: min(640px, calc(100vw - 24px)); }
+.delete-lead, .delete-note { font-size: 0.85rem; color: var(--text-dim); margin: 0 0 10px; }
+.delete-note { color: var(--warn); }
+.delete-list { list-style: none; margin: 0 0 12px; padding: 0; max-height: 38vh; overflow: auto;
+  border: 1px solid var(--border); border-radius: 10px; }
+.delete-list li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 8px 12px;
+  border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+.delete-list li:last-child { border-bottom: none; }
+.delete-list .d-name { font-weight: 600; overflow-wrap: anywhere; }
+.delete-list .d-path { grid-column: 1; color: var(--text-dim); font-size: 0.75rem; overflow-wrap: anywhere; }
+.delete-list .d-size { grid-row: 1; grid-column: 2; color: var(--text-dim); white-space: nowrap; }
+.delete-list .d-tag { grid-column: 2; grid-row: 2; font-size: 0.72rem; text-align: right; color: var(--text-dim); }
+.delete-list li.is-blocked { opacity: 0.6; }
+.delete-list li.is-blocked .d-tag, .delete-list li.is-nobin .d-tag { color: var(--warn); }
+.delete-mode { border: none; padding: 0; margin: 0 0 8px; display: grid; gap: 8px; }
+.delete-mode label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.delete-mode em { color: var(--text-dim); font-style: normal; }
+.delete-sure { display: flex; gap: 8px; align-items: center; font-size: 0.85rem; margin-top: 6px; color: var(--danger-text); }
+.delete-sure[hidden], .delete-note[hidden] { display: none; }

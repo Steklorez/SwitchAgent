@@ -1594,6 +1594,12 @@ def queue_dock(conn, prep_items: list, *, paused: bool = False) -> dict:
     return {"games": result, "paused": paused}
 
 
+def preparing_item_ids(ctx) -> list[int]:
+    """Library items a run of Queue is still preparing or about to send --
+    their files must stay where they are."""
+    return [p["library_item_id"] for p in ctx.preparations.dock_items()]
+
+
 def nav_busy(conn, ctx) -> dict:
     """{tab: bool} -- is something still running behind this sidebar tab.
     Library: a scan, cover downloads, or a console being read (its "On
