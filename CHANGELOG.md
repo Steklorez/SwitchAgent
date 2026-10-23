@@ -7,6 +7,10 @@ Entries are one sentence per change, three to five lines per release, and
 only what a user would notice — no internals, no reasoning, no history.
 Those belong in the commit message. See [CLAUDE.md](CLAUDE.md#how-to-write-an-entry).
 
+## v1.0.27
+
+- Add-ons: sys-clk, per-game CPU, GPU and memory clocks, installed with its overlay and manager.
+
 ## v1.0.26
 
 - RAR archives install with nothing extra to download: 7-Zip now comes with SwitchAgent.
