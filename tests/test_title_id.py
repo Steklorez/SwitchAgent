@@ -38,6 +38,39 @@ def test_from_filename_ambiguous_multiple_matches_refuses_to_guess():
     assert guess.title_id is None, "must not arbitrarily pick one of two candidates"
 
 
+def test_from_filename_base_tag_corrects_an_update_id():
+    """Real release (Moomin Midsummer Madness): base XCI and 1.0.3 update
+    NSP both labelled with the update's id."""
+    base = title_id.from_filename("Moomin Midsummer Madness [010009e0263ca800][Base].xci")
+    update = title_id.from_filename("Moomin Midsummer Madness [010009e0263ca800][v196608][UP v1.0.3].nsp")
+    assert base.title_id == "010009E0263CA000"
+    assert update.title_id == "010009E0263CA800"
+    assert title_id.classify_title_variant(base.title_id).variant == "BASE"
+    assert title_id.classify_title_variant(update.title_id).variant == "UPDATE"
+
+
+def test_from_filename_update_word_corrects_a_base_id():
+    assert title_id.from_filename("Game [0100000000010000][UPD].nsp").title_id == "0100000000010800"
+    assert title_id.from_filename("Game [0100000000010000][Update v1.2].nsp").title_id == "0100000000010800"
+
+
+def test_from_filename_version_tag_alone_is_not_a_role():
+    # a base cartridge with its update merged in is labelled with the update's version
+    assert title_id.from_filename("Game [0100000000010000][v131072].xci").title_id == "0100000000010000"
+    assert title_id.from_filename("Game [0100000000010800][v0].nsp").title_id == "0100000000010800"
+
+
+def test_from_filename_role_never_moves_dlc_or_contradicts_itself():
+    assert title_id.from_filename("Game DLC [0100000000011001][Base].nsp").title_id == "0100000000011001"
+    assert title_id.from_filename("Game [0100000000010800][Base][UPD].nsp").title_id == "0100000000010800"
+
+
+def test_strip_release_tags_removes_role_tags():
+    assert title_id.strip_release_tags("Moomin Midsummer Madness [010009e0263ca800][Base]") == "Moomin Midsummer Madness"
+    assert title_id.strip_release_tags("Moomin Midsummer Madness [010009e0263ca800][v196608][UP v1.0.3]") == \
+        "Moomin Midsummer Madness"
+
+
 def test_from_atmosphere_path_is_confident():
     guess = title_id.from_atmosphere_path("atmosphere/contents/0100000000040000/romfs/text.bin")
     assert guess.title_id == "0100000000040000"

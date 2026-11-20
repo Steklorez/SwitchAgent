@@ -29,7 +29,7 @@ from typing import NamedTuple, Optional
 _PATTERN = re.compile(r"^[0-9A-Fa-f]{16}$")
 _BRACKET_PATTERN = re.compile(r"\[([0-9A-Fa-f]{16})\]")
 _ATMOSPHERE_PATTERN = re.compile(r"(?:^|/)atmosphere/(?:contents|titles)/([0-9a-f]{16})(?=/|$)", re.IGNORECASE)
-_RELEASE_TAG_PATTERN = re.compile(r"\s*\[(?:[0-9A-Fa-f]{16}|v\d+)\]")
+_RELEASE_TAG_PATTERN = re.compile(r"\s*\[(?:[0-9A-Fa-f]{16}|v\d+|base(?: game)?|upd|update|up v[\d.]+)\]", re.IGNORECASE)
 _NAME_NORMALIZE_PATTERN = re.compile(r"[^a-z0-9]+")
 _APOSTROPHE_PATTERN = re.compile(r"['‘’]")
 
@@ -88,13 +88,53 @@ class TitleIdGuess(NamedTuple):
 
 def from_filename(name: str) -> TitleIdGuess:
     """Low-confidence guess from a bracketed 16-hex segment in a filename.
-    Never confident -- filenames are just labels, not proof."""
+    Never confident -- filenames are just labels, not proof.
+
+    The same release often says what the file is twice: in the id's low
+    bits (000 base, 800 update) and in a word tag ("[Base]", "[UPD]").
+    When the two disagree the tag wins, and the id moves to
+    the other end of the same family -- see release_role()."""
     matches = _BRACKET_PATTERN.findall(name)
     if len(matches) != 1:
         # Zero matches: no candidate. More than one: ambiguous, refuse to
         # pick one arbitrarily -- that would be guessing.
         return TitleIdGuess(None, None, False)
-    return TitleIdGuess(matches[0].upper(), "filename", False)
+    return TitleIdGuess(_apply_release_role(matches[0].upper(), release_role(name)), "filename", False)
+
+
+# What a release filename says the package is, apart from its id. Real case
+# (Moomin Midsummer Madness, 2026-11-20): the base game's XCI and the 1.0.3
+# update's NSP were both labelled [010009e0263ca800] -- the update's id --
+# so the base game read as a second update and the game had no base at all.
+_BASE_TAG_PATTERN = re.compile(r"\[\s*base(?:\s+game)?\s*\]", re.IGNORECASE)
+_UPDATE_TAG_PATTERN = re.compile(r"\[\s*(?:upd|update|patch|up\s+v[\d.]+)\b[^\]]*\]", re.IGNORECASE)
+
+
+def release_role(name: str) -> Optional[str]:
+    """"BASE", "UPDATE" or None from a release filename's own words
+    ("[Base]", "[UPD]", "[UP v1.0.3]"). A version tag is not a role: a
+    cartridge dump with its update merged in is a base game labelled
+    "[v131072]", and test fixtures label anything "[v0]". Words that
+    contradict each other say nothing."""
+    roles = set()
+    if _BASE_TAG_PATTERN.search(name):
+        roles.add("BASE")
+    if _UPDATE_TAG_PATTERN.search(name):
+        roles.add("UPDATE")
+    return roles.pop() if len(roles) == 1 else None
+
+
+def _apply_release_role(title_id_value: str, role: Optional[str]) -> str:
+    """Only ever moves between a family's base (low 12 bits 000) and its
+    update (800). A DLC id, or a homebrew port's made-up one, is left as
+    written: a tag cannot say which of those it should have been."""
+    value = int(title_id_value, 16)
+    low12 = value & 0xFFF
+    if role == "BASE" and low12 == 0x800:
+        return f"{value & ~0xFFF:016X}"
+    if role == "UPDATE" and low12 == 0x000:
+        return f"{value | 0x800:016X}"
+    return title_id_value
 
 
 def from_atmosphere_path(entry_path: str) -> TitleIdGuess:
