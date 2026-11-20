@@ -360,6 +360,24 @@ a { color: var(--accent); text-decoration: none; }
 .modal::backdrop { background: rgba(0,0,0,0.6); }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 
+/* Settings' folder picker for a remote browser (settings.js) */
+.folder-browser { max-width: 640px; }
+.folder-browser-path { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+.folder-browser-path input {
+  flex: 1 1 auto; min-width: 0; padding: 6px 8px; border-radius: 8px;
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+}
+.folder-browser-list {
+  list-style: none; margin: 0; padding: 0; height: min(50vh, 420px); overflow-y: auto;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2);
+}
+.folder-browser-list button {
+  display: block; width: 100%; text-align: left; padding: 6px 10px; border: 0; background: none;
+  color: var(--text); font: inherit; cursor: pointer; overflow-wrap: anywhere;
+}
+.folder-browser-list button:hover, .folder-browser-list button:focus-visible { background: var(--surface); }
+.folder-browser-list .folder-browser-empty { padding: 6px 10px; color: var(--text-dim); }
+
 /* Root-cause fix for the "DLC"/"Update"/"Mod" tag letter-stacking bug:
    this used to blanket-apply word-break: break-word to every <span> in a
    confirm-list row, including .confirm-tag -- combined with a too-narrow

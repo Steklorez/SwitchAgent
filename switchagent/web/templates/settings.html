@@ -86,8 +86,25 @@
     <button type="button" id="library-dir-pick-btn" class="btn btn-small">Choose folder…</button>
   </div>
   <p id="library-dir-feedback" class="settings-hint" role="status"></p>
-  <p class="settings-hint">Each folder is checked before it's added. Removing one here only stops SwitchAgent watching it -- the files themselves stay on disk. Removing the last one is allowed: SwitchAgent then watches nothing and clears its index. The picker dialog only works on the computer running SwitchAgent; over the network, type the path instead.</p>
+  <p class="settings-hint">Each folder is checked before it's added. Removing one here only stops SwitchAgent watching it -- the files themselves stay on disk. Removing the last one is allowed: SwitchAgent then watches nothing and clears its index. Opened from another computer, Choose folder shows the folders of the computer running SwitchAgent.</p>
 </section>
+
+{#- The folder picker for a browser on another machine (settings.js):
+    the folders of the computer running SwitchAgent, never this one's. -#}
+<dialog id="folder-browser" class="modal folder-browser" aria-labelledby="folder-browser-title">
+  <h3 id="folder-browser-title">Choose a folder on the SwitchAgent computer</h3>
+  <div class="folder-browser-path">
+    <button type="button" class="btn btn-small" id="folder-browser-up" title="Up one level" aria-label="Up one level">↑</button>
+    <input type="text" id="folder-browser-input" spellcheck="false" placeholder="Drives">
+    <button type="button" class="btn btn-small" id="folder-browser-go">Go</button>
+  </div>
+  <ul id="folder-browser-list" class="folder-browser-list"></ul>
+  <p id="folder-browser-status" class="settings-hint" role="status"></p>
+  <div class="modal-actions">
+    <button type="button" class="btn btn-secondary" id="folder-browser-cancel">Cancel</button>
+    <button type="button" class="btn" id="folder-browser-choose" disabled>Add this folder</button>
+  </div>
+</dialog>
 
 <section class="settings-section">
   <h3>Worker</h3>

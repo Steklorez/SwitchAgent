@@ -33,6 +33,52 @@ def _bring_dialog_to_front(hwnd, msg, lp, data) -> int:
     return 0
 
 
+# A folder with more sub-folders than this is shown cut short (and says so);
+# the path can still be typed.
+BROWSE_LIMIT = 2000
+
+
+def list_drives() -> list[str]:
+    if os.name != "nt":
+        return ["/"]
+    drives = getattr(os, "listdrives", None)
+    if drives is not None:
+        return list(drives())
+    return [f"{letter}:\\" for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" if os.path.exists(f"{letter}:\\")]
+
+
+def browse_folders(path: str | None) -> dict:
+    """The sub-folders of one folder on the computer running SwitchAgent --
+    the folder picker for a browser on another machine, which the native
+    dialog (pick_folder) cannot reach: it would open on the server's own
+    screen. Folders only, never files; nothing here writes. An empty path
+    lists the drives."""
+    if not path or not path.strip():
+        return {"path": "", "parent": None, "folders": [{"name": d, "path": d} for d in list_drives()],
+                "truncated": False}
+    folder = os.path.abspath(os.path.expanduser(path.strip()))
+    if not os.path.isdir(folder):
+        raise FileNotFoundError(f"Not a folder: {folder}")
+    names = []
+    with os.scandir(folder) as entries:
+        for entry in entries:
+            try:
+                if entry.is_dir(follow_symlinks=True):
+                    names.append(entry.name)
+            except OSError:
+                continue
+    names.sort(key=str.casefold)
+    parent = os.path.dirname(folder.rstrip("\\/")) if folder.rstrip("\\/") else None
+    if parent == folder or not parent or (os.name == "nt" and folder.rstrip("\\/").endswith(":")):
+        parent = ""  # a drive root goes back to the drive list
+    return {
+        "path": folder,
+        "parent": parent,
+        "folders": [{"name": n, "path": os.path.join(folder, n)} for n in names[:BROWSE_LIMIT]],
+        "truncated": len(names) > BROWSE_LIMIT,
+    }
+
+
 def pick_folder() -> str | None:
     if os.name != "nt":
         raise RuntimeError("Folder picking is only available on Windows. Enter the path manually.")

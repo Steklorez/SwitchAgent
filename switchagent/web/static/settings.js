@@ -267,8 +267,74 @@
       });
     }
 
-    if (libraryPickBtn) {
-      libraryPickBtn.disabled = !["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
+    // Over the network the Windows dialog would open on the server's own
+    // screen, so a remote browser walks the server's folders in the page.
+    const browser = document.getElementById("folder-browser");
+    const browserInput = document.getElementById("folder-browser-input");
+    const browserList = document.getElementById("folder-browser-list");
+    const browserStatus = document.getElementById("folder-browser-status");
+    const browserUp = document.getElementById("folder-browser-up");
+    const browserChoose = document.getElementById("folder-browser-choose");
+    let browserParent = null;
+    let browserShown = "";
+
+    async function browseTo(path) {
+      browserStatus.textContent = "Loading…";
+      try {
+        const res = await fetch(`/api/settings/library-dir/browse?path=${encodeURIComponent(path)}`);
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.detail || `HTTP ${res.status}`);
+        browserShown = body.path;
+        browserParent = body.parent;
+        browserInput.value = body.path;
+        browserUp.disabled = body.parent === null;
+        browserChoose.disabled = !body.path;
+        browserList.replaceChildren();
+        for (const folder of body.folders) {
+          const li = document.createElement("li");
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.textContent = `📁 ${folder.name}`;
+          btn.addEventListener("click", () => browseTo(folder.path));
+          li.appendChild(btn);
+          browserList.appendChild(li);
+        }
+        if (!body.folders.length) {
+          const li = document.createElement("li");
+          li.className = "folder-browser-empty";
+          li.textContent = "No sub-folders here.";
+          browserList.appendChild(li);
+        }
+        browserStatus.textContent = body.truncated ? "Too many folders to list them all -- type the rest of the path." : "";
+        browserList.scrollTop = 0;
+      } catch (e) {
+        browserStatus.textContent = String(e.message || e);
+      }
+    }
+
+    if (browser) {
+      browserUp.addEventListener("click", () => { if (browserParent !== null) browseTo(browserParent); });
+      document.getElementById("folder-browser-go").addEventListener("click", () => browseTo(browserInput.value.trim()));
+      browserInput.addEventListener("keydown", (evt) => {
+        if (evt.key === "Enter") { evt.preventDefault(); browseTo(browserInput.value.trim()); }
+      });
+      document.getElementById("folder-browser-cancel").addEventListener("click", () => browser.close());
+      browserChoose.addEventListener("click", async () => {
+        const path = browserShown;
+        browser.close();
+        if (path) await addLibraryDir(path);
+      });
+    }
+
+    const isLocal = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
+    if (libraryPickBtn && !isLocal && browser) {
+      libraryPickBtn.addEventListener("click", () => {
+        libraryFeedback.textContent = "";
+        browser.showModal();
+        browseTo(browserShown);
+      });
+    } else if (libraryPickBtn) {
+      libraryPickBtn.disabled = !isLocal;
       libraryPickBtn.addEventListener("click", async () => {
         libraryPickBtn.disabled = true;
         libraryFeedback.textContent = "Choose a folder in the Windows dialog that just opened…";

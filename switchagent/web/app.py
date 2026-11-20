@@ -306,6 +306,13 @@ def create_app(ctx: WebContext) -> FastAPI:
     app = FastAPI(title="SwitchAgent")
     app.state.ctx = ctx
     app.mount("/static", StaticFiles(directory=str(_WEB_DIR / "static")), name="static")
+
+    # The browser tab's icon: the app's own (tray, exe), linked from base.html
+    # and here for whatever asks the root for it unprompted.
+    @app.get("/favicon.ico", include_in_schema=False)
+    def favicon():
+        return FileResponse(_WEB_DIR / "static" / "app.ico", media_type="image/x-icon",
+                            headers={"Cache-Control": "public, max-age=86400"})
     # W3-009: see _handle_unexpected_error's own docstring/comments above --
     # only genuinely unhandled exceptions reach this; existing
     # HTTPException-based 4xx responses everywhere else in this file are
@@ -899,6 +906,18 @@ def create_app(ctx: WebContext) -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return {"ok": True, **result}
+
+    @app.get("/api/settings/library-dir/browse")
+    def api_browse_library_dir(path: str = ""):
+        # The picker for a browser on another machine: the native dialog
+        # below would open on this computer's screen, not the user's.
+        from ..folder_picker import browse_folders
+        try:
+            return browse_folders(path)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except OSError as exc:
+            raise HTTPException(status_code=403, detail=f"Cannot open {path}: {exc.strerror or exc}") from exc
 
     @app.post("/api/settings/library-dir/pick")
     def api_pick_library_dir(request: Request):

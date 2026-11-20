@@ -15,6 +15,43 @@ def test_picker_local_cancel_and_remote_rejection(web_ctx, monkeypatch):
     assert calls == [True]
 
 
+def test_remote_browser_walks_the_servers_folders(web_ctx, tmp_path):
+    """A browser on another machine cannot use the native dialog (it opens
+    on the server's screen), so it lists the server's folders instead:
+    drives first, then folders only -- never files."""
+    tmp_path = tmp_path / "browse"
+    tmp_path.mkdir()
+    (tmp_path / "Игры").mkdir()
+    (tmp_path / "b-folder").mkdir()
+    (tmp_path / "game.nsp").write_bytes(b"x")
+    with TestClient(create_app(web_ctx), client=("192.168.1.42", 12345)) as client:
+        drives = client.get("/api/settings/library-dir/browse").json()
+        assert drives["path"] == "" and drives["parent"] is None and drives["folders"]
+        listing = client.get("/api/settings/library-dir/browse", params={"path": str(tmp_path)}).json()
+        assert [f["name"] for f in listing["folders"]] == ["b-folder", "Игры"]
+        assert listing["folders"][1]["path"] == str(tmp_path / "Игры")
+        assert listing["parent"] == str(tmp_path.parent)
+        missing = client.get("/api/settings/library-dir/browse", params={"path": str(tmp_path / "nope")})
+        assert missing.status_code == 404
+
+
+def test_browser_drive_root_goes_back_to_the_drive_list():
+    import os
+    import pytest
+    if os.name != "nt":
+        pytest.skip("Windows drive letters")
+    root = os.environ.get("SystemDrive", "C:") + "\\"
+    assert root in folder_picker.list_drives()
+    assert folder_picker.browse_folders(root)["parent"] == ""
+
+
+def test_pages_carry_the_app_icon(web_ctx):
+    with TestClient(create_app(web_ctx)) as client:
+        icon = client.get("/favicon.ico")
+        assert icon.status_code == 200 and icon.content[:4] == b"\x00\x00\x01\x00"
+        assert 'rel="icon"' in client.get("/settings").text
+
+
 def test_picker_unexpected_failure_returns_json(web_ctx, monkeypatch):
     def fail():
         raise AttributeError("missing Windows flag")
