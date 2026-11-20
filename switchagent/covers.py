@@ -25,6 +25,22 @@ STEAM_SEARCH = "https://store.steampowered.com/api/storesearch/?cc=us&l=en&term=
 # is), the wide header where an old game has no portrait art.
 STEAM_ART = ("https://cdn.akamai.steamstatic.com/steam/apps/{}/library_600x900.jpg",
              "https://cdn.akamai.steamstatic.com/steam/apps/{}/header.jpg")
+# Newer Steam apps keep their art under a hashed path the two above cannot
+# guess (Moomin: Midsummer Madness, 2026); the store says where its header is.
+STEAM_DETAILS = "https://store.steampowered.com/api/appdetails?filters=basic&appids={}"
+# What a release name adds after the game's own: "Moomin Midsummer Madness
+# Switch XCI BASE GAME", "... Switch NSP Update 1.0.3". Only from a package
+# format word on (optionally preceded by "Switch"), so a title that merely
+# contains "Switch" keeps it.
+_RELEASE_SUFFIX = re.compile(r"\s+(?:(?:nintendo\s+)?switch\s+)?(?:nsp|nsz|xci|xcz)\b.*$", re.IGNORECASE)
+
+
+def name_candidates(name):
+    """The name as given, then without a release's trailing format words."""
+    if not name:
+        return []
+    short = _RELEASE_SUFFIX.sub("", name).strip()
+    return [name] + ([short] if short and short != name else [])
 _ALLOWED = {"raw.githubusercontent.com", "img-eshop.cdn.nintendo.net", "assets.nintendo.com",
             "store.steampowered.com", "cdn.akamai.steamstatic.com", "shared.akamai.steamstatic.com"}
 # A game with no TITLE_ID is known to Library by its row: "sd-12",
@@ -99,6 +115,14 @@ def steam_cover(name):
             if exc.code == 404:
                 continue
             raise
+        if _is_image(data):
+            return data
+    details = json.loads(download(STEAM_DETAILS.format(int(apps[0])), 1024 * 1024))
+    entry = details.get(str(int(apps[0]))) if isinstance(details, dict) else None
+    data_block = entry.get("data") if isinstance(entry, dict) and entry.get("success") else None
+    header = data_block.get("header_image") if isinstance(data_block, dict) else None
+    if header and allowed_url(header):
+        data = download(header, 5 * 1024 * 1024)
         if _is_image(data):
             return data
     return None
@@ -262,13 +286,17 @@ class CoverQueue:
         icon = nro_icon(self.paths.get(tid) or ())
         if icon:
             return icon
-        url = self._lookup_by_name(name)
-        if url:
-            self.phase = "Downloading covers"
-            return download(url, 5 * 1024 * 1024)
-        if name:
+        names = name_candidates(name)
+        for candidate in names:
+            url = self._lookup_by_name(candidate)
+            if url:
+                self.phase = "Downloading covers"
+                return download(url, 5 * 1024 * 1024)
+        for candidate in names:
             self.phase = "Searching Steam"
-            return steam_cover(name)
+            data = steam_cover(candidate)
+            if data is not None:
+                return data
         return None
 
     def _run(self):

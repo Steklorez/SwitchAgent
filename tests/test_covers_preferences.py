@@ -257,6 +257,41 @@ def test_steam_is_asked_by_the_name_without_release_notes_and_only_an_exact_name
     assert not covers.image_path("01693DFA9BB80000").exists()
 
 
+def test_a_release_named_archive_finds_its_steam_art_under_a_hashed_path(tmp_path, monkeypatch):
+    """Real case: "Moomin Midsummer Madness Switch XCI BASE GAME" is not in
+    TitleDB; Steam knows "Moomin: Midsummer Madness", whose art lives under
+    a hashed path the fixed URLs 404 on."""
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path / "data")
+    import urllib.error
+    art = b"\xff\xd8\xffmoomin"
+    header = "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/4463520/abc/header.jpg?t=1"
+    searched = []
+
+    def download(url, limit):
+        if url == covers.TITLEDB:
+            return json.dumps({}).encode()
+        if url.startswith(covers.STEAM_SEARCH):
+            searched.append(url[len(covers.STEAM_SEARCH):])
+            return json.dumps({"items": [{"type": "app", "id": 4463520, "name": "Moomin: Midsummer Madness"}]}).encode()
+        if url in [t.format(4463520) for t in covers.STEAM_ART]:
+            raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+        if url == covers.STEAM_DETAILS.format(4463520):
+            return json.dumps({"4463520": {"success": True, "data": {"header_image": header}}}).encode()
+        assert url == header
+        return art
+    monkeypatch.setattr(covers, "download", download)
+    queue = covers.CoverQueue()
+    queue.submit([("010009E0263CA000", "Moomin Midsummer Madness Switch XCI BASE GAME")])
+    _run_queue(queue)
+    assert covers.image_path("010009E0263CA000").read_bytes() == art
+    assert searched[-1] == "Moomin%20Midsummer%20Madness"
+
+
+def test_name_candidates_keep_a_title_that_merely_contains_switch():
+    assert covers.name_candidates("Nintendo Switch Sports") == ["Nintendo Switch Sports"]
+    assert covers.name_candidates("Game Switch NSP Update 1.0.3") == ["Game Switch NSP Update 1.0.3", "Game"]
+
+
 def test_cover_ids_are_title_ids_or_library_rows_and_nothing_else():
     assert covers.valid_cover_id("01333de6fb400000")
     assert covers.valid_cover_id("sd-12") and covers.valid_cover_id("OTHER-7")
